@@ -1,0 +1,19 @@
+[project]
+name = "elster2mqtt"
+version = "0.1.0"
+requires-python = ">= 3.13"
+dependencies = [
+    "paho-mqtt",
+    "python-can",
+    "pyyaml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+elster2mqtt = "elster2mqtt:elster2mqtt.main"

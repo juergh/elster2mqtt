@@ -1,0 +1,17 @@
+Source: elster2mqtt
+Section: misc
+Priority: optional
+Maintainer: Juerg Haefliger <juergh@proton.me>
+Build-Depends: debhelper (>=13),
+               dh-sequence-python3,
+               pybuild-plugin-pyproject,
+               python3-all,
+               python3-setuptools
+Standards-Version: 4.6.2
+Homepage: https://github.com/juergh/elster2mqtt
+
+Package: elster2mqtt
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}
+Description: Elster to MQTT service
+ Elster to MQTT service

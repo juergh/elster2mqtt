@@ -1,0 +1,64 @@
+# Elster configuration data for Stiebel-Eltron
+# Based on https://github.com/fknipp/canpicker
+
+mqtt:
+  server: 192.168.99.11
+  port: 1883
+  topic_prefix: wpms3/
+
+can:
+  interface: can0
+  sender: 680
+
+data:
+  # Heizung
+  - name: AUSSENTEMPERATUR
+    index: 180.000c
+    format: dec_val
+  - name: ISTTEMPERATUR_HK_1
+    index: 180.02ca
+    format: dec_val
+  - name: SOLLTEMPERATUR_HK_1
+    index: 180.01d7
+    format: dec_val
+  - name: ISTTEMPERATUR_HK_2
+    index: 180.000f
+    format: dec_val
+  - name: SOLLTEMPERATUR_HK_2
+    index: 180.0004
+    format: dec_val
+  - name: VORLAUFISTTEMPERATUR
+    index: 180.01d6
+    format: dec_val
+  - name: RÜCKLAUFISTTEMPERATUR
+    index: 180.0016
+    format: dec_val
+  - name: PUFFERISTTEMPERATUR
+    index: 180.0078
+    format: dec_val
+  - name: PUFFERSOLLTEMPERATUR
+    index: 180.01d5
+    format: dec_val
+  - name: ANLAGENFROST
+    index: 180.0a00
+    format: dec_val
+  # Warmwasser
+  - name: WARMWASSER_ISTTEMPERATUR
+    index: 180.000e
+    format: dec_val
+  - name: WARMWASSER_SOLLTEMPERATUR
+    index: 180.0003
+    format: dec_val
+  # Misc
+  - name: FEHLER
+    index: 180.0001
+  - name: PUMPENSTATUS
+    index: 180.fdad
+    format: little_endian
+
+#  - name: VORLAUFISTTEMPERATUR_WP
+#    index: 180.06a1
+#    format: dec_val
+#  - name: QUELLENTEMPERATUR
+#    index: 180.01d4
+#    format: dec_val

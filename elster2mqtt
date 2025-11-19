@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+
+from src.elster2mqtt import elster2mqtt
+
+elster2mqtt.main()

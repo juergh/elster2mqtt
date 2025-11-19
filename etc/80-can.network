@@ -1,0 +1,8 @@
+# Copy file to /etc/systemd/network/
+
+[Match]
+Name=can0
+
+[CAN]
+BitRate=20K
+RestartSec=100ms
