@@ -98,9 +98,9 @@ class ElsterMessage(can.Message):
         if not self.fmt:
             return self.value
         return {
-            "dec_val": f"{(self.value / 10.0):.1f}",
-            "mil_val": f"{(self.value / 1000.0):.3f}",
-            "little_endian": f"{(((self.value & 0xff) << 8) | (self.value >> 8)):d}",
+            "dec_val": self.value / 10.0,
+            "mil_val": self.value / 1000.0,
+            "little_endian": ((self.value & 0xff) << 8) | (self.value >> 8),
         }[self.fmt]
 
 
