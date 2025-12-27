@@ -4,6 +4,7 @@
 
 import argparse
 import json
+import time
 
 import can
 import paho.mqtt.client as mqtt
@@ -26,6 +27,10 @@ class ElsterDataByte2Error(ElsterError):
 
 
 class ElsterInvalidName(ElsterError):
+    pass
+
+
+class ElsterReadTimedOut(ElsterError):
     pass
 
 
@@ -124,7 +129,7 @@ class ElsterBus:
         rec, reg = c["index"].split(".")
         return int(rec, 16), int(reg, 16), c.get("format")
 
-    def read(self, name=None, receiver=None, register=None, fmt=None):
+    def read(self, name=None, receiver=None, register=None, fmt=None, timeout=30):
         # Construct the read request
         if name:
             receiver, register, fmt = self.config_lookup(name)
@@ -134,12 +139,20 @@ class ElsterBus:
             msg.value = 12345
             return msg
 
-        # Send the read request and wait for the response
+        # Send the read request
         self.bus.send(msg)
-        for m in self.bus:
-            msg = ElsterMessage(msg=m, fmt=fmt)
-            if msg.type == TYPE_RESPONSE and msg.sender == receiver and msg.receiver == self.sender:
-                return msg
+
+        # Wait for the response
+        start_time = time.time()
+        while time.time() < (start_time + timeout):
+            m = self.bus.recv(timeout=timeout)
+            try:
+                msg = ElsterMessage(msg=m, fmt=fmt)
+                if msg.type == TYPE_RESPONSE and msg.sender == receiver and msg.receiver == self.sender:
+                    return msg
+            except ElsterError as e:
+                print(e)
+        raise ElsterReadTimedOut("Timed out waiting for a response")
 
 
 class MqttClient:
