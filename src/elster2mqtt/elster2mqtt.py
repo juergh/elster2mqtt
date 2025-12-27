@@ -3,6 +3,7 @@
 #
 
 import argparse
+import json
 
 import can
 import paho.mqtt.client as mqtt
@@ -199,7 +200,7 @@ def main():
             msg = elster.read(name)
             print(f"{name} ({msg.sender:03x}.{msg.register:04x}): {msg.formatted_value}")
             info[name.lower()] = msg.formatted_value
-        mqttc.publish("info", str(info))
+        mqttc.publish("info", json.dumps(info))
 
 
 if __name__ == "__main__":
