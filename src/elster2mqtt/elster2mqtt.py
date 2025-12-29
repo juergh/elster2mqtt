@@ -75,6 +75,14 @@ def decode_elster_data(data, size=7):
     return msg_type, receiver, register, value
 
 
+def twos_complement(value):
+    """Compute the 2's complement"""
+    if value & 0x8000:
+        # Sign bit is set
+        value = value - 0x10000
+    return value
+
+
 class ElsterMessage(can.Message):
     """Elster message class"""
     def __init__(self, sender=None, receiver=None, register=None, msg=None, fmt=None):
@@ -98,8 +106,8 @@ class ElsterMessage(can.Message):
         if not self.fmt:
             return self.value
         return {
-            "dec_val": self.value / 10.0,
-            "mil_val": self.value / 1000.0,
+            "dec_val": twos_complement(self.value) / 10.0,
+            "mil_val": twos_complement(self.value) / 1000.0,
             "little_endian": ((self.value & 0xff) << 8) | (self.value >> 8),
         }[self.fmt]
 
@@ -178,7 +186,7 @@ class MqttClient:
     def publish(self, topic, value):
         if self.topic_prefix:
             topic = f"{self.topic_prefix}{topic}"
-        print(f"Publish: {topic}: {value}")
+        print(topic, value)
         if not self.simulate:
             self.client.publish(topic, value)
 
@@ -199,13 +207,13 @@ def main():
     with ElsterBus(config, simulate=args.simulate_can) as elster, MqttClient(config, simulate=args.simulate_mqtt) as mqttc:
         if args.name:
             msg = elster.read(args.name)
-            print(f"{args.name} ({msg.sender:03x}.{msg.register:04x}): {msg.formatted_value}")
+            mqttc.publish(args.name.lower(), msg.formatted_value)
             return
 
         if args.index:
             rec, reg = args.index.split(".")
             msg = elster.read(receiver=int(rec, 16), register=int(reg, 16))
-            print(f"UNBEKANNT ({args.index}): {msg.value}")
+            mqttc.publish(args.index, msg.value)
             return
 
         info = {}
