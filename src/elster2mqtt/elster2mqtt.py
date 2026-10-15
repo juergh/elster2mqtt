@@ -187,21 +187,26 @@ class MqttClient:
 
     def __enter__(self):
         if not self.simulate:
-            self.client = mqtt.Client()
+            if hasattr(mqtt, "CallbackAPIVersion"):
+                self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+            else:
+                self.client = mqtt.Client()
             self.client.connect(self.server, self.port)
             self.client.loop_start()  # runs in the background
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.client:
+            self.client.disconnect()
             self.client.loop_stop()
 
-    def publish(self, topic, value):
+    def publish(self, topic, value, timeout=10):
         if self.topic_prefix:
             topic = f"{self.topic_prefix}{topic}"
         print(topic, value)
         if not self.simulate:
-            self.client.publish(topic, value)
+            res = self.client.publish(topic, value)
+            res.wait_for_publish(timeout=timeout)
 
 
 def main():
