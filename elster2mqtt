@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
-from src.elster2mqtt import elster2mqtt
+import sys
+from pathlib import Path
 
-elster2mqtt.main()
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
+from elster2mqtt import elster2mqtt
+
+if __name__ == "__main__":
+    elster2mqtt.main()
