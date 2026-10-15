@@ -1,3 +1,19 @@
+elster2mqtt (0.1.1) unstable; urgency=medium
+
+  * Match register ID in CAN read responses.
+  * Handle CAN receive timeouts cleanly without crashing.
+  * Allow decoding both 5- and 7-byte Elster frames.
+  * Await MQTT message delivery and disconnect cleanly on exit.
+  * Handle per-sensor timeouts gracefully in batch polling.
+  * Correct response attributes on simulated reads.
+  * Order systemd service after network-online.target.
+  * Switch to debhelper-compat (= 13).
+  * Expand package description in debian/control.
+  * Standardize script entry point and package discovery.
+  * Fix mock bus and expand test coverage.
+
+ -- Juerg Haefliger <juergh@proton.me>  Thu, 15 Oct 2026 21:05:00 +0200
+
 elster2mqtt (0.1.0) unstable; urgency=medium
 
   * Initial release.
