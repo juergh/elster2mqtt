@@ -16,5 +16,8 @@ pythonpath = ["src"]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project.scripts]
-elster2mqtt = "elster2mqtt:elster2mqtt.main"
+elster2mqtt = "elster2mqtt.elster2mqtt:main"
