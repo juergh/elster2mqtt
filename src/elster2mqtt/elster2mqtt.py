@@ -56,10 +56,13 @@ def encode_elster_data(receiver, register, value=None):
     return data
 
 
-def decode_elster_data(data, size=7):
+def decode_elster_data(data, size=None):
     """Decode Elster request/response frame data"""
-    if len(data) != size:
-        raise ElsterDataSizeError(f"Invalid data frame size: {len(data)} (expected {size})")
+    if size is not None:
+        if len(data) != size:
+            raise ElsterDataSizeError(f"Invalid data frame size: {len(data)} (expected {size})")
+    elif len(data) not in (5, 7):
+        raise ElsterDataSizeError(f"Invalid data frame size: {len(data)} (expected 5 or 7)")
     if data[2] != 0xfa:
         raise ElsterDataByte2Error(f"Unsupported data frame byte 2: {data}")
 
