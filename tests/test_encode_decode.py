@@ -1,9 +1,9 @@
 import pytest
 
-from src.elster2mqtt.elster2mqtt import (ElsterDataByte2Error,
-                                         ElsterDataSizeError,
-                                         decode_elster_data,
-                                         encode_elster_data)
+from elster2mqtt.elster2mqtt import (ElsterDataByte2Error,
+                                     ElsterDataSizeError,
+                                     decode_elster_data,
+                                     encode_elster_data)
 
 
 def test_encode_request_ok():

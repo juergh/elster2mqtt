@@ -1,10 +1,10 @@
 import can
 
-from src.elster2mqtt.elster2mqtt import (ElsterBus,
-                                         TYPE_REQUEST,
-                                         TYPE_RESPONSE,
-                                         decode_elster_data,
-                                         encode_elster_data)
+from elster2mqtt.elster2mqtt import (ElsterBus,
+                                     TYPE_REQUEST,
+                                     TYPE_RESPONSE,
+                                     decode_elster_data,
+                                     encode_elster_data)
 
 
 class DummyCanBus:
