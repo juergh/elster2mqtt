@@ -152,8 +152,13 @@ class ElsterBus:
 
         # Wait for the response
         start_time = time.time()
-        while time.time() < (start_time + timeout):
-            m = self.bus.recv(timeout=timeout)
+        while True:
+            remaining = (start_time + timeout) - time.time()
+            if remaining <= 0:
+                break
+            m = self.bus.recv(timeout=remaining)
+            if m is None:
+                continue
             try:
                 msg = ElsterMessage(msg=m, fmt=fmt)
                 if (
