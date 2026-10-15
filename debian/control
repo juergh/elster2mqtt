@@ -14,4 +14,5 @@ Package: elster2mqtt
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}
 Description: Elster to MQTT service
- Elster to MQTT service
+ Service that reads telemetry data from Stiebel-Eltron / Elster heating
+ controllers over a CAN bus and publishes the metrics to an MQTT broker.
