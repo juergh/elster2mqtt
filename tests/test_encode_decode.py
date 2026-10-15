@@ -2,8 +2,10 @@ import pytest
 
 from elster2mqtt.elster2mqtt import (ElsterDataByte2Error,
                                      ElsterDataSizeError,
+                                     ElsterMessage,
                                      decode_elster_data,
-                                     encode_elster_data)
+                                     encode_elster_data,
+                                     twos_complement)
 
 
 def test_encode_request_ok():
@@ -49,3 +51,36 @@ def test_decode_size_error():
 def test_decode_byte2_error():
     with pytest.raises(ElsterDataByte2Error):
         decode_elster_data([0, 0, 0, 0, 0, 0, 0])
+
+
+def test_twos_complement_positive():
+    assert twos_complement(0x0000) == 0
+    assert twos_complement(0x00c8) == 200
+    assert twos_complement(0x7fff) == 32767
+
+
+def test_twos_complement_negative():
+    assert twos_complement(0xffff) == -1
+    assert twos_complement(0xfff6) == -10
+    assert twos_complement(0x8000) == -32768
+
+
+def test_formatted_value():
+    msg = ElsterMessage(sender=0x180, receiver=0x680, register=0x000c, fmt="dec_val")
+    msg.value = 0x00c8
+    assert msg.formatted_value == 20.0
+
+    msg.value = 0xfff6
+    assert msg.formatted_value == -1.0
+
+    msg.fmt = "mil_val"
+    msg.value = 0x07d0
+    assert msg.formatted_value == 2.0
+
+    msg.fmt = "little_endian"
+    msg.value = 0x1234
+    assert msg.formatted_value == 0x3412
+
+    msg.fmt = None
+    msg.value = 42
+    assert msg.formatted_value == 42
