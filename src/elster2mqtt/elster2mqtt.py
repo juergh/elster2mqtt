@@ -236,10 +236,14 @@ def main():
 
         info = {}
         for name in elster.config:
-            msg = elster.read(name)
-            print(f"{name} ({msg.sender:03x}.{msg.register:04x}): {msg.formatted_value}")
-            info[name.lower()] = msg.formatted_value
-        mqttc.publish("info", json.dumps(info))
+            try:
+                msg = elster.read(name)
+                print(f"{name} ({msg.sender:03x}.{msg.register:04x}): {msg.formatted_value}")
+                info[name.lower()] = msg.formatted_value
+            except ElsterReadTimedOut as e:
+                print(f"{name}: {e}")
+        if info:
+            mqttc.publish("info", json.dumps(info))
 
 
 if __name__ == "__main__":
