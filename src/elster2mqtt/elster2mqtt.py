@@ -156,7 +156,12 @@ class ElsterBus:
             m = self.bus.recv(timeout=timeout)
             try:
                 msg = ElsterMessage(msg=m, fmt=fmt)
-                if msg.type == TYPE_RESPONSE and msg.sender == receiver and msg.receiver == self.sender:
+                if (
+                    msg.type == TYPE_RESPONSE
+                    and msg.sender == receiver
+                    and msg.receiver == self.sender
+                    and msg.register == register
+                ):
                     return msg
             except ElsterError as e:
                 print(e)
