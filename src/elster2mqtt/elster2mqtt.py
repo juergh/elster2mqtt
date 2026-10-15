@@ -147,6 +147,9 @@ class ElsterBus:
         msg = ElsterMessage(sender=self.sender, receiver=receiver, register=register, fmt=fmt)
 
         if self.simulate:
+            msg.type = TYPE_RESPONSE
+            msg.sender = receiver
+            msg.receiver = self.sender
             msg.value = 12345
             return msg
 
