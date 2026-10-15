@@ -14,10 +14,7 @@ class DummyCanBus:
         self.register = register
         self.value = value
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
+    def recv(self, timeout=None):
         data = encode_elster_data(self.sender, self.register, self.value)
         return can.Message(arbitration_id=self.receiver, data=data)
 
