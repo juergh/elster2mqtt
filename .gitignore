@@ -1,3 +1,14 @@
 *~
-src/elster2mqtt/__pycache__/
-tests/__pycache__/
+__pycache__/
+*.pyc
+*.egg-info/
+.pybuild/
+.pytest_cache/
+build/
+dist/
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/elster2mqtt/
+debian/elster2mqtt.*.debhelper
+debian/elster2mqtt.substvars
+debian/files
