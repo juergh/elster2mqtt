@@ -2,7 +2,7 @@ Source: elster2mqtt
 Section: misc
 Priority: optional
 Maintainer: Juerg Haefliger <juergh@proton.me>
-Build-Depends: debhelper (>=13),
+Build-Depends: debhelper-compat (= 13),
                dh-sequence-python3,
                pybuild-plugin-pyproject,
                python3-all,
