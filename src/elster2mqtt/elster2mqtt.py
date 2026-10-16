@@ -366,6 +366,8 @@ def main():
                 info[name.lower()] = msg.formatted_value
             except ElsterReadTimedOut as e:
                 print(f"{name}: {e}")
+            if not elster.simulate:
+                time.sleep(0.05)
         if info:
             state, components = synthesize_metrics(info)
             comp_str = ", ".join(components) if components else "keine"
