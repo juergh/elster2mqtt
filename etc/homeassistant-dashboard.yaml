@@ -1,0 +1,181 @@
+# Home Assistant Dashboard configuration for elster2mqtt (WPM 3 / WPL 15 AS)
+#
+# How to use:
+# 1. In Home Assistant, go to Settings -> Dashboards -> Add Dashboard -> "New dashboard from scratch"
+# 2. Open the new dashboard, click the three dots (...) top-right -> "Edit Dashboard"
+# 3. Click the three dots (...) top-right again -> "Raw configuration editor"
+# 4. Paste the content of this file and click Save.
+
+title: Wärmepumpe
+views:
+  - title: Übersicht
+    icon: mdi:heat-pump-outline
+    type: sections
+    sections:
+      # ==========================================
+      # Section 1: Live Status & Inverter
+      # ==========================================
+      - title: Betriebszustand & Modulation
+        cards:
+          - type: tile
+            entity: sensor.wpms3_betriebszustand
+            name: Aktueller Zustand
+            icon: mdi:heat-pump-outline
+            color: orange
+
+          - type: tile
+            entity: binary_sensor.wpms3_verdichter_aktiv
+            name: Verdichter
+            color: green
+
+          - type: tile
+            entity: binary_sensor.wpms3_abtauung_aktiv
+            name: Abtauung
+            color: blue
+
+          - type: tile
+            entity: binary_sensor.wpms3_zusatzheizung_aktiv
+            name: Zusatzheizung (DHC)
+            color: red
+
+          - type: gauge
+            entity: sensor.wpms3_verdichter_drehzahl
+            name: Inverter Verdichter
+            min: 0
+            max: 100
+            unit: Hz
+            needle: true
+            severity:
+              green: 20
+              yellow: 60
+              red: 85
+
+          - type: gauge
+            entity: sensor.wpms3_heissgastemperatur
+            name: Heissgastemperatur
+            min: 20
+            max: 110
+            unit: °C
+            needle: true
+            severity:
+              green: 20
+              yellow: 75
+              red: 95
+
+      # ==========================================
+      # Section 2: Efficiency & COP
+      # ==========================================
+      - title: Effizienz & Arbeitszahl
+        cards:
+          - type: gauge
+            entity: sensor.wpms3_jaz_total
+            name: All-Time JAZ
+            min: 1
+            max: 5
+            needle: true
+            severity:
+              red: 2.5
+              yellow: 3.2
+              green: 3.8
+
+          - type: gauge
+            entity: sensor.wpms3_cop_heizen_tag
+            name: COP Heizen Heute
+            min: 1
+            max: 6
+            needle: true
+            severity:
+              red: 2.5
+              yellow: 3.5
+              green: 4.2
+
+          - type: entities
+            title: Energie Heute (kWh)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_waermeertrag_heizen_tag
+                name: Wärmeertrag Heizen
+              - entity: sensor.wpms3_stromverbrauch_heizen_tag
+                name: Stromverbrauch Heizen
+              - entity: sensor.wpms3_cop_heizen_tag
+                name: COP Heizen
+              - entity: sensor.wpms3_waermeertrag_warmwasser_tag
+                name: Wärmeertrag Warmwasser
+              - entity: sensor.wpms3_stromverbrauch_warmwasser_tag
+                name: Stromverbrauch Warmwasser
+              - entity: sensor.wpms3_cop_warmwasser_tag
+                name: COP Warmwasser
+
+      # ==========================================
+      # Section 3: Hydraulics & Temperatures
+      # ==========================================
+      - title: Hydraulik & Temperaturen
+        cards:
+          - type: entities
+            title: Temperaturübersicht
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_aussentemperatur
+                name: Aussentemperatur
+              - entity: sensor.wpms3_vorlaufisttemperatur
+                name: WP Vorlauf Ist
+              - entity: sensor.wpms3_ruecklaufisttemperatur
+                name: WP Rücklauf Ist
+              - entity: sensor.wpms3_pufferisttemperatur
+                name: Puffer Ist
+              - entity: sensor.wpms3_puffersolltemperatur
+                name: Puffer Soll
+              - entity: sensor.wpms3_radiator_vorlauf_ist_hk_2
+                name: Radiator Vorlauf Ist (HK 2)
+              - entity: sensor.wpms3_radiator_vorlauf_soll_hk_2
+                name: Radiator Vorlauf Soll (HK 2)
+              - entity: sensor.wpms3_warmwasser_isttemperatur
+                name: Warmwasser Ist
+              - entity: sensor.wpms3_warmwasser_solltemperatur
+                name: Warmwasser Soll
+              - entity: sensor.wpms3_raumsolltemperatur
+                name: Raumsolltemperatur
+
+          - type: entities
+            title: Heizkurven & Laufzeiten
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_heizkurve_hk_1_puffer
+                name: Heizkurve HK 1 (Puffer)
+              - entity: sensor.wpms3_heizkurve_hk_2_radiatoren
+                name: Heizkurve HK 2 (Radiatoren)
+              - entity: sensor.wpms3_starts_abtauung
+                name: Starts Abtauung Total
+              - entity: sensor.wpms3_laufzeit_verdichter_heizen
+                name: Verdichterlaufzeit Heizen
+              - entity: sensor.wpms3_laufzeit_verdichter_warmwasser
+                name: Verdichterlaufzeit Warmwasser
+
+      # ==========================================
+      # Section 4: 24h Trends & History
+      # ==========================================
+      - title: 24h Zeitverlauf
+        cards:
+          - type: history-graph
+            title: Betriebsstatus Verlauf (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.wpms3_betriebszustand
+                name: Betriebszustand
+              - entity: binary_sensor.wpms3_verdichter_aktiv
+                name: Verdichter Aktiv
+
+          - type: history-graph
+            title: Temperaturverlauf (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.wpms3_aussentemperatur
+                name: Aussen
+              - entity: sensor.wpms3_radiator_vorlauf_ist_hk_2
+                name: Radiator Vorlauf (HK 2)
+              - entity: sensor.wpms3_ruecklaufisttemperatur
+                name: Rücklauf
+              - entity: sensor.wpms3_pufferisttemperatur
+                name: Puffer
+              - entity: sensor.wpms3_warmwasser_isttemperatur
+                name: Warmwasser

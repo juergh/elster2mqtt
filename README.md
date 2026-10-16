@@ -389,6 +389,14 @@ mqtt:
       device_class: running
 ```
 
+### Dashboard Setup
+
+A ready-to-use Lovelace dashboard configuration is provided in `etc/homeassistant-dashboard.yaml`. To import it:
+1. In Home Assistant, go to **Settings** -> **Dashboards** -> **Add Dashboard** -> select **New dashboard from scratch**.
+2. Open the new dashboard, click the three dots (`...`) top-right -> **Edit Dashboard**.
+3. Click the three dots (`...`) again -> **Raw configuration editor**.
+4. Paste the content of `etc/homeassistant-dashboard.yaml` and click **Save**.
+
 ---
 
 ## Development & Building
