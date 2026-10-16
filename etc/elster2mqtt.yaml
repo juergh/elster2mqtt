@@ -55,52 +55,32 @@ data:
   - name: FEHLER
     index: 180.0001
   - name: PUMPENSTATUS
-    index: 180.fdad
+    index: 180.01d2
     format: little_endian
 
   # Heizkurve & Regelung
-  - name: HEIZKURVE
-    index: 180.010e
+  - name: HEIZKURVE_HK_2
+    index: 601.010e
     format: cent_val
   - name: RAUMSOLLTEMP_I
     index: 180.0005
     format: dec_val
-  - name: SOMMERBETRIEB
-    index: 180.fdb4
 
-  # Status & Inverter (WPL 15 AS)
-  - name: WP_STATUS
-    index: 180.fdae
-    format: little_endian
-  - name: WAERMEPUMPEN_STATUS
-    index: 180.0062
-    format: little_endian
-  - name: AKTIVE_HEIZSTUFEN
-    index: 180.05bc
+  # Inverter & Verdichter (WPL 15 AS)
   - name: ISTDREHZAHL_VERDICHTER
-    index: 180.063e
-  - name: SOLLDREHZAHL_VERDICHTER
-    index: 180.063c
-  - name: VOLUMENSTROM
-    index: 180.01da
+    index: 500.063e
   - name: HEISSGAS_TEMP
-    index: 180.0265
+    index: 500.0265
     format: dec_val
-  - name: ABTAUUNGAKTIV
-    index: 180.0061
   - name: STARTS_ABTAUUNG
-    index: 180.0806
-  - name: LAUFZEIT_VERDICHTER_HEIZEN
-    index: 180.05a5
+    index: 500.0806
 
   # Energie & Ertrag (COP)
   - name: WAERMEERTRAG_HEIZ_TAG_KWH
-    index: 180.092f
+    index: 500.092f
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
-    index: 180.091f
+    index: 500.091f
   - name: WAERMEERTRAG_WW_TAG_KWH
-    index: 180.092b
+    index: 500.092b
   - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
-    index: 180.091b
-  - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
-    index: 180.0927
+    index: 500.091b
