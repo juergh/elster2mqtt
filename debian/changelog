@@ -1,3 +1,16 @@
+elster2mqtt (0.2.0) unstable; urgency=medium
+
+  * Add cent_val formatter support for heating curve slopes.
+  * Make CAN read timeout configurable via YAML and --timeout CLI flag.
+  * Derive operational states and publish to dedicated status topic.
+  * Decode actuator bitmasks and report active components.
+  * Synthesize cumulative energy totals (kWh) and calculate JAZ and daily COP.
+  * Update default configuration for Stiebel-Eltron WPM 3 and WPL 15 AS.
+  * Add README with configuration reference, tuning guide, and Home Assistant setup.
+  * Expand unit test suite covering state derivation, energy synthesis, and timeout.
+
+ -- Juerg Haefliger <juergh@proton.me>  Fri, 16 Oct 2026 17:15:00 +0200
+
 elster2mqtt (0.1.1) unstable; urgency=medium
 
   * Match register ID in CAN read responses.
