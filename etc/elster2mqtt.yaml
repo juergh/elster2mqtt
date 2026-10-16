@@ -9,6 +9,7 @@ mqtt:
 can:
   interface: can0
   sender: 680
+  timeout: 5
 
 data:
   # Heizung
@@ -70,6 +71,8 @@ data:
     format: dec_val
 
   # Inverter & Verdichter (WPL 15 AS)
+  - name: ABTAUUNGAKTIV
+    index: 500.0061
   - name: ISTDREHZAHL_VERDICHTER
     index: 500.063e
   - name: HEISSGAS_TEMP
