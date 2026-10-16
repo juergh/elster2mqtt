@@ -77,8 +77,12 @@ data:
     format: dec_val
   - name: STARTS_ABTAUUNG
     index: 500.0806
+  - name: LAUFZEIT_VERDICHTER_HEIZEN
+    index: 500.07fc
+  - name: LAUFZEIT_VERDICHTER_WW
+    index: 500.0802
 
-  # Energie & Ertrag (COP)
+  # Energie & Ertrag (COP / JAZ)
   - name: WAERMEERTRAG_HEIZ_TAG_KWH
     index: 500.092f
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
@@ -87,3 +91,21 @@ data:
     index: 500.092b
   - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
     index: 500.091b
+  - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
+    index: 500.0927
+  - name: WAERMEERTRAG_HEIZ_SUM_MWH
+    index: 500.0931
+  - name: WAERMEERTRAG_HEIZ_SUM_KWH
+    index: 500.0930
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_SUM_MWH
+    index: 500.0921
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_SUM_KWH
+    index: 500.0920
+  - name: WAERMEERTRAG_WW_SUM_MWH
+    index: 500.092d
+  - name: WAERMEERTRAG_WW_SUM_KWH
+    index: 500.092c
+  - name: EL_AUFNAHMELEISTUNG_WW_SUM_MWH
+    index: 500.091d
+  - name: EL_AUFNAHMELEISTUNG_WW_SUM_KWH
+    index: 500.091c
