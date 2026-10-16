@@ -118,9 +118,11 @@ class ElsterMessage(can.Message):
 
 class ElsterBus:
     """Elster bus class"""
-    def __init__(self, config, simulate=False):
+    def __init__(self, config, simulate=False, timeout=None):
         self.channel = config["can"]["interface"]
         self.sender = int(config["can"]["sender"], 16)
+        config_timeout = float(config.get("can", {}).get("timeout", 5))
+        self.timeout = float(timeout) if timeout is not None else config_timeout
         self.config = {x["name"]: x for x in config["data"]}
         self.simulate = simulate
         self.bus = None
@@ -141,7 +143,9 @@ class ElsterBus:
         rec, reg = c["index"].split(".")
         return int(rec, 16), int(reg, 16), c.get("format")
 
-    def read(self, name=None, receiver=None, register=None, fmt=None, timeout=30):
+    def read(self, name=None, receiver=None, register=None, fmt=None, timeout=None):
+        if timeout is None:
+            timeout = self.timeout
         # Construct the read request
         if name:
             receiver, register, fmt = self.config_lookup(name)
@@ -219,6 +223,7 @@ def main():
     parser.add_argument("config", help="Configuration file in YAML format")
     parser.add_argument("--simulate-can", action="store_true", default=False, help="Simulate CAN bus read")
     parser.add_argument("--simulate-mqtt", action="store_true", default=False, help="Simulate MQTT publish")
+    parser.add_argument("--timeout", type=float, default=None, help="CAN read timeout in seconds")
     parser.add_argument("--name", help="Read the given name")
     parser.add_argument("--index", help="Read the given index")
     args = parser.parse_args()
@@ -226,7 +231,7 @@ def main():
     with open(args.config, "r") as fh:
         config = yaml.load(fh, Loader=yaml.BaseLoader)
 
-    with ElsterBus(config, simulate=args.simulate_can) as elster, MqttClient(config, simulate=args.simulate_mqtt) as mqttc:
+    with ElsterBus(config, simulate=args.simulate_can, timeout=args.timeout) as elster, MqttClient(config, simulate=args.simulate_mqtt) as mqttc:
         if args.name:
             msg = elster.read(args.name)
             mqttc.publish(args.name.lower(), msg.formatted_value)
