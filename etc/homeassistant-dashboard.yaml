@@ -10,33 +10,25 @@ title: Wärmepumpe
 views:
   - title: Übersicht
     icon: mdi:heat-pump-outline
-    type: sections
-    sections:
+    cards:
       # ==========================================
-      # Section 1: Live Status & Inverter
+      # Column 1: Live Status & Inverter
       # ==========================================
-      - title: Betriebszustand & Modulation
+      - type: vertical-stack
         cards:
-          - type: tile
-            entity: sensor.wpms3_betriebszustand
-            name: Aktueller Zustand
-            icon: mdi:heat-pump-outline
-            color: orange
-
-          - type: tile
-            entity: binary_sensor.wpms3_verdichter_aktiv
-            name: Verdichter
-            color: green
-
-          - type: tile
-            entity: binary_sensor.wpms3_abtauung_aktiv
-            name: Abtauung
-            color: blue
-
-          - type: tile
-            entity: binary_sensor.wpms3_zusatzheizung_aktiv
-            name: Zusatzheizung (DHC)
-            color: red
+          - type: entities
+            title: Betriebszustand
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_betriebszustand
+                name: Aktueller Zustand
+                icon: mdi:heat-pump-outline
+              - entity: binary_sensor.wpms3_verdichter_aktiv
+                name: Verdichter
+              - entity: binary_sensor.wpms3_abtauung_aktiv
+                name: Abtauung
+              - entity: binary_sensor.wpms3_zusatzheizung_aktiv
+                name: Zusatzheizung (DHC)
 
           - type: gauge
             entity: sensor.wpms3_verdichter_drehzahl
@@ -63,9 +55,9 @@ views:
               red: 95
 
       # ==========================================
-      # Section 2: Efficiency & COP
+      # Column 2: Efficiency & COP
       # ==========================================
-      - title: Effizienz & Arbeitszahl
+      - type: vertical-stack
         cards:
           - type: gauge
             entity: sensor.wpms3_jaz_total
@@ -107,9 +99,9 @@ views:
                 name: COP Warmwasser
 
       # ==========================================
-      # Section 3: Hydraulics & Temperatures
+      # Column 3: Hydraulics & Temperatures
       # ==========================================
-      - title: Hydraulik & Temperaturen
+      - type: vertical-stack
         cards:
           - type: entities
             title: Temperaturübersicht
@@ -152,9 +144,9 @@ views:
                 name: Verdichterlaufzeit Warmwasser
 
       # ==========================================
-      # Section 4: 24h Trends & History
+      # Column 4: 24h Trends & History
       # ==========================================
-      - title: 24h Zeitverlauf
+      - type: vertical-stack
         cards:
           - type: history-graph
             title: Betriebsstatus Verlauf (24h)
