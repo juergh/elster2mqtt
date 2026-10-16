@@ -244,6 +244,7 @@ cop_daily_heating = waermeertrag_heiz_tag_kwh / el_aufnahmeleistung_heiz_tag_kwh
 ```
 cop_daily_ww = waermeertrag_ww_tag_kwh / el_aufnahmeleistung_ww_tag_kwh
 ```
+*(Note: Daily COP fields are populated once today's electrical consumption reaches at least 1 kWh to guard against division by zero early in the morning).*
 
 #### C. All-Time Seasonal Performance Factor (JAZ / SCOP)
 Stiebel-Eltron controllers store cumulative lifetime energy across two registers: MWh (megawatt-hours) and remaining kWh (0–999). `elster2mqtt` combines them into monotonic total kWh values:
@@ -370,6 +371,17 @@ mqtt:
       state_topic: "wpms3/info"
       value_template: "{{ value_json.jaz_total }}"
       icon: "mdi:gauge"
+
+    # Daily Efficiency (COP)
+    - name: "Heat Pump Daily Heating COP"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.cop_daily_heating | default('unavailable') }}"
+      icon: "mdi:chart-line"
+
+    - name: "Heat Pump Daily DHW COP"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.cop_daily_ww | default('unavailable') }}"
+      icon: "mdi:chart-line"
 
   binary_sensor:
     - name: "Heat Pump Compressor Active"
