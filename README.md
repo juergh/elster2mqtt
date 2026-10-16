@@ -122,7 +122,6 @@ data:
     index: 180.0001
   - name: PUMPENSTATUS
     index: 180.01d2
-    format: little_endian
 
   # Heating Curves & Setpoints
   - name: HEIZKURVE_HK_1
