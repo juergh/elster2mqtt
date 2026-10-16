@@ -54,10 +54,10 @@ On Stiebel-Eltron systems, metrics are distributed across distinct nodes:
 
 | CAN Node | Typical Role | Typical Metrics |
 | :--- | :--- | :--- |
-| **`180`** | **WPM Master Controller** | Outdoor temp, buffer temp, DHW temp, pump status bitmask |
-| **`500`** | **IWS (Outdoor Inverter / Heat Pump)** | Compressor frequency (Hz/RPM), hot gas temp, defrost cycles, heat yield, electrical intake |
-| **`601`** | **Heating Circuit 1 (HK 1)** | Heating curve slope HK 1, room setpoint |
-| **`602`** | **Heating Circuit 2 (HK 2)** | Heating curve slope HK 2, mixer flow setpoint |
+| **`180`** | **WPM Master Controller** | Outdoor temp, buffer temp, DHW temp, room setpoint (`180.0005`), flow setpoints, pump status bitmask (`180.01d2`) |
+| **`500`** | **IWS (Outdoor Inverter Board)** | Compressor frequency (`500.063e`), hot gas temp (`500.0265`), defrost cycles (`500.0806`), compressor run hours, heat yield & electrical intake |
+| **`601`** | **Heating Circuit 1 (HK 1)** | Heating curve slope HK 1 (`601.010e`) |
+| **`602`** | **Heating Circuit 2 (HK 2)** | Heating curve slope HK 2 (`602.010e`) |
 
 ---
 
@@ -74,6 +74,7 @@ mqtt:
 can:
   interface: can0
   sender: 680
+  timeout: 5
 
 data:
   # Temperatures
@@ -86,25 +87,57 @@ data:
   - name: SOLLTEMPERATUR_HK_1
     index: 180.01d7
     format: dec_val
+  - name: ISTTEMPERATUR_HK_2
+    index: 180.000f
+    format: dec_val
+  - name: SOLLTEMPERATUR_HK_2
+    index: 180.0004
+    format: dec_val
+  - name: VORLAUFISTTEMPERATUR
+    index: 180.01d6
+    format: dec_val
+  - name: RUECKLAUFISTTEMPERATUR
+    index: 180.0016
+    format: dec_val
   - name: PUFFERISTTEMPERATUR
     index: 180.0078
     format: dec_val
   - name: PUFFERSOLLTEMPERATUR
     index: 180.01d5
     format: dec_val
+  - name: ANLAGENFROST
+    index: 180.0a00
+    format: dec_val
 
-  # Heating Curves
+  # Domestic Hot Water (DHW)
+  - name: WARMWASSER_ISTTEMPERATUR
+    index: 180.000e
+    format: dec_val
+  - name: WARMWASSER_SOLLTEMPERATUR
+    index: 180.0003
+    format: dec_val
+
+  # Misc
+  - name: FEHLER
+    index: 180.0001
+  - name: PUMPENSTATUS
+    index: 180.01d2
+    format: little_endian
+
+  # Heating Curves & Setpoints
   - name: HEIZKURVE_HK_1
     index: 601.010e
     format: cent_val
   - name: HEIZKURVE_HK_2
     index: 602.010e
     format: cent_val
+  - name: RAUMSOLLTEMP_I
+    index: 180.0005
+    format: dec_val
 
   # Status & Inverter Diagnostics (WPL 15 AS)
-  - name: PUMPENSTATUS
-    index: 180.01d2
-    format: little_endian
+  - name: ABTAUUNGAKTIV
+    index: 500.0061
   - name: ISTDREHZAHL_VERDICHTER
     index: 500.063e
   - name: HEISSGAS_TEMP
@@ -112,12 +145,38 @@ data:
     format: dec_val
   - name: STARTS_ABTAUUNG
     index: 500.0806
+  - name: LAUFZEIT_VERDICHTER_HEIZEN
+    index: 500.07fc
+  - name: LAUFZEIT_VERDICHTER_WW
+    index: 500.0802
 
-  # Energy & Intake (for COP calculation)
+  # Energy & Intake (for COP / JAZ calculation)
   - name: WAERMEERTRAG_HEIZ_TAG_KWH
     index: 500.092f
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
     index: 500.091f
+  - name: WAERMEERTRAG_WW_TAG_KWH
+    index: 500.092b
+  - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
+    index: 500.091b
+  - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
+    index: 500.0927
+  - name: WAERMEERTRAG_HEIZ_SUM_MWH
+    index: 500.0931
+  - name: WAERMEERTRAG_HEIZ_SUM_KWH
+    index: 500.0930
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_SUM_MWH
+    index: 500.0921
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_SUM_KWH
+    index: 500.0920
+  - name: WAERMEERTRAG_WW_SUM_MWH
+    index: 500.092d
+  - name: WAERMEERTRAG_WW_SUM_KWH
+    index: 500.092c
+  - name: EL_AUFNAHMELEISTUNG_WW_SUM_MWH
+    index: 500.091d
+  - name: EL_AUFNAHMELEISTUNG_WW_SUM_KWH
+    index: 500.091c
 ```
 
 ### Supported Formatters
@@ -137,8 +196,11 @@ data:
 ### Command Line Interface
 
 ```bash
-# Full batch poll (reads all configured parameters and publishes to <topic_prefix>/info)
+# Full batch poll (reads all configured parameters, synthesizes state, and publishes to <topic_prefix>info and <topic_prefix>status)
 elster2mqtt /etc/elster2mqtt.yaml
+
+# Poll with custom read timeout (in seconds, overriding config)
+elster2mqtt /etc/elster2mqtt.yaml --timeout 10
 
 # Poll single named register from config
 elster2mqtt /etc/elster2mqtt.yaml --name AUSSENTEMPERATUR
@@ -173,7 +235,7 @@ journalctl -u elster2mqtt.service -e
 
 `elster2mqtt` automatically computes the following efficiency and energy metrics on every poll:
 
-#### A. Daily Heating Coefficient of Performance (COP_heating)
+#### A. Daily Heating Coefficient of Performance (cop_daily_heating)
 ```
 cop_daily_heating = waermeertrag_heiz_tag_kwh / el_aufnahmeleistung_heiz_tag_kwh
 ```
@@ -250,6 +312,71 @@ The 16-bit status word provides real-time state for individual actuators:
    - Schedule DHW production during early afternoon hours when ambient air temperature is highest, maximizing air-source COP.
 5. **Prevent Short-Cycling (Takten):**
    - Inverter heat pumps should run continuous modulation cycles lasting 45–90+ minutes. Monitor compressor speed (`ISTDREHZAHL_VERDICHTER`) to confirm modulation at 25–50 Hz.
+
+---
+
+## Home Assistant Integration
+
+Add the following to your Home Assistant `configuration.yaml` to ingest the operational status, temperatures, and total energy entities:
+
+```yaml
+mqtt:
+  sensor:
+    # Operational State
+    - name: "Heat Pump Operating State"
+      state_topic: "wpms3/status"
+      icon: "mdi:heat-pump-outline"
+
+    # Temperatures
+    - name: "Heat Pump Outside Temperature"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.aussentemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "Radiator Flow Temperature (HK 2)"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.isttemperatur_hk_2 }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "Buffer Temperature"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.pufferisttemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    # Energy Dashboard Entity (Cumulative Electricity Consumption)
+    - name: "Heat Pump Total Electrical Intake"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.el_aufnahmeleistung_total_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+
+    # Energy Dashboard Entity (Cumulative Heat Output)
+    - name: "Heat Pump Total Heat Output"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.waermeertrag_total_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+
+    # Seasonal Performance Factor
+    - name: "Heat Pump JAZ Total"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.jaz_total }}"
+      icon: "mdi:gauge"
+
+  binary_sensor:
+    - name: "Heat Pump Compressor Active"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.verdichter_laeuft }}"
+      device_class: running
+```
 
 ---
 
