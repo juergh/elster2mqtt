@@ -1,0 +1,206 @@
+# Home Assistant MQTT configuration for elster2mqtt (WPM 3 / WPL 15 AS)
+# Add or merge this block in your Home Assistant configuration.yaml under `mqtt:`
+
+mqtt:
+  sensor:
+    # --- Operational State ---
+    - name: "WPMS3 Betriebszustand"
+      state_topic: "wpms3/status"
+      icon: "mdi:heat-pump-outline"
+
+    # --- Temperatures ---
+    - name: "WPMS3 Aussentemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.aussentemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Vorlaufisttemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.vorlaufisttemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Ruecklaufisttemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.ruecklaufisttemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Pufferisttemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.pufferisttemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Puffersolltemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.puffersolltemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    # --- Radiator Circuit (HK 2 - Sensor 2e Mischervorlauf) ---
+    - name: "WPMS3 Radiator Vorlauf Ist (HK 2)"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.isttemperatur_hk_2 }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Radiator Vorlauf Soll (HK 2)"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.solltemperatur_hk_2 }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    # --- Domestic Hot Water ---
+    - name: "WPMS3 Warmwasser Isttemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.warmwasser_isttemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Warmwasser Solltemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.warmwasser_solltemperatur }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    # --- Heating Curves & Setpoint ---
+    - name: "WPMS3 Heizkurve HK 1 (Puffer)"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.heizkurve_hk_1 }}"
+      icon: "mdi:chart-bell-curve"
+
+    - name: "WPMS3 Heizkurve HK 2 (Radiatoren)"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.heizkurve_hk_2 }}"
+      icon: "mdi:chart-bell-curve"
+
+    - name: "WPMS3 Raumsolltemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.raumsolltemp_i }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+
+    # --- Inverter Diagnostics (WPL 15 AS) ---
+    - name: "WPMS3 Verdichter Drehzahl"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.istdrehzahl_verdichter }}"
+      unit_of_measurement: "Hz"
+      icon: "mdi:fan"
+
+    - name: "WPMS3 Heissgastemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.heissgas_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Starts Abtauung"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.starts_abtauung }}"
+      state_class: total_increasing
+      icon: "mdi:snowflake-melt"
+
+    - name: "WPMS3 Laufzeit Verdichter Heizen"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.laufzeit_verdichter_heizen }}"
+      unit_of_measurement: "h"
+      state_class: total_increasing
+
+    - name: "WPMS3 Laufzeit Verdichter Warmwasser"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.laufzeit_verdichter_ww }}"
+      unit_of_measurement: "h"
+      state_class: total_increasing
+
+    # --- Today's Energy & COP ---
+    - name: "WPMS3 Waermeertrag Heizen Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.waermeertrag_heiz_tag_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    - name: "WPMS3 Stromverbrauch Heizen Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.el_aufnahmeleistung_heiz_tag_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    - name: "WPMS3 COP Heizen Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.cop_daily_heating | default('unavailable') }}"
+      icon: "mdi:chart-line"
+
+    - name: "WPMS3 Waermeertrag Warmwasser Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.waermeertrag_ww_tag_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    - name: "WPMS3 Stromverbrauch Warmwasser Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.el_aufnahmeleistung_ww_tag_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    - name: "WPMS3 COP Warmwasser Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.cop_daily_ww | default('unavailable') }}"
+      icon: "mdi:chart-line"
+
+    # --- Home Assistant Energy Dashboard Entities (All-Time Totals) ---
+    - name: "WPMS3 Total Stromverbrauch"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.el_aufnahmeleistung_total_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+
+    - name: "WPMS3 Total Waermeertrag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.waermeertrag_total_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+
+    # --- Lifetime Performance (JAZ) ---
+    - name: "WPMS3 JAZ Total"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.jaz_total }}"
+      icon: "mdi:gauge"
+
+    - name: "WPMS3 JAZ Heizen"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.jaz_heizung }}"
+      icon: "mdi:gauge"
+
+    - name: "WPMS3 JAZ Warmwasser"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.jaz_warmwasser }}"
+      icon: "mdi:gauge"
+
+  binary_sensor:
+    - name: "WPMS3 Verdichter Aktiv"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.verdichter_laeuft }}"
+      device_class: running
+
+    - name: "WPMS3 Abtauung Aktiv"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.abtauung_aktiv }}"
+      device_class: cold
+
+    - name: "WPMS3 Zusatzheizung Aktiv"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.zusatzheizung_aktiv }}"
+      device_class: heat
