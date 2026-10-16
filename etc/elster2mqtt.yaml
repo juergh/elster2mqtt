@@ -42,6 +42,7 @@ data:
   - name: ANLAGENFROST
     index: 180.0a00
     format: dec_val
+
   # Warmwasser
   - name: WARMWASSER_ISTTEMPERATUR
     index: 180.000e
@@ -49,6 +50,7 @@ data:
   - name: WARMWASSER_SOLLTEMPERATUR
     index: 180.0003
     format: dec_val
+
   # Misc
   - name: FEHLER
     index: 180.0001
@@ -56,9 +58,49 @@ data:
     index: 180.fdad
     format: little_endian
 
-#  - name: VORLAUFISTTEMPERATUR_WP
-#    index: 180.06a1
-#    format: dec_val
-#  - name: QUELLENTEMPERATUR
-#    index: 180.01d4
-#    format: dec_val
+  # Heizkurve & Regelung
+  - name: HEIZKURVE
+    index: 180.010e
+    format: cent_val
+  - name: RAUMSOLLTEMP_I
+    index: 180.0005
+    format: dec_val
+  - name: SOMMERBETRIEB
+    index: 180.fdb4
+
+  # Status & Inverter (WPL 15 AS)
+  - name: WP_STATUS
+    index: 180.fdae
+    format: little_endian
+  - name: WAERMEPUMPEN_STATUS
+    index: 180.0062
+    format: little_endian
+  - name: AKTIVE_HEIZSTUFEN
+    index: 180.05bc
+  - name: ISTDREHZAHL_VERDICHTER
+    index: 180.063e
+  - name: SOLLDREHZAHL_VERDICHTER
+    index: 180.063c
+  - name: VOLUMENSTROM
+    index: 180.01da
+  - name: HEISSGAS_TEMP
+    index: 180.0265
+    format: dec_val
+  - name: ABTAUUNGAKTIV
+    index: 180.0061
+  - name: STARTS_ABTAUUNG
+    index: 180.0806
+  - name: LAUFZEIT_VERDICHTER_HEIZEN
+    index: 180.05a5
+
+  # Energie & Ertrag (COP)
+  - name: WAERMEERTRAG_HEIZ_TAG_KWH
+    index: 180.092f
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
+    index: 180.091f
+  - name: WAERMEERTRAG_WW_TAG_KWH
+    index: 180.092b
+  - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
+    index: 180.091b
+  - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
+    index: 180.0927
