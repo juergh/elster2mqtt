@@ -31,7 +31,7 @@ data:
   - name: VORLAUFISTTEMPERATUR
     index: 180.01d6
     format: dec_val
-  - name: RÜCKLAUFISTTEMPERATUR
+  - name: RUECKLAUFISTTEMPERATUR
     index: 180.0016
     format: dec_val
   - name: PUFFERISTTEMPERATUR
