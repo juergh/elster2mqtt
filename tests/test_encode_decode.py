@@ -73,6 +73,10 @@ def test_formatted_value():
     msg.value = 0xfff6
     assert msg.formatted_value == -1.0
 
+    msg.fmt = "cent_val"
+    msg.value = 40
+    assert msg.formatted_value == 0.40
+
     msg.fmt = "mil_val"
     msg.value = 0x07d0
     assert msg.formatted_value == 2.0

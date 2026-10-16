@@ -110,6 +110,7 @@ class ElsterMessage(can.Message):
             return self.value
         return {
             "dec_val": twos_complement(self.value) / 10.0,
+            "cent_val": twos_complement(self.value) / 100.0,
             "mil_val": twos_complement(self.value) / 1000.0,
             "little_endian": ((self.value & 0xff) << 8) | (self.value >> 8),
         }[self.fmt]
