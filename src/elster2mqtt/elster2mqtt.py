@@ -179,8 +179,8 @@ class ElsterBus:
                     and msg.register == register
                 ):
                     return msg
-            except ElsterError as e:
-                print(e)
+            except ElsterError:
+                pass
         raise ElsterReadTimedOut("Timed out waiting for a response")
 
 
