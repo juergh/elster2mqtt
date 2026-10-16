@@ -1,3 +1,11 @@
+elster2mqtt (0.2.1) unstable; urgency=medium
+
+  * Ignore unrelated ambient CAN bus frames during read
+  * config: Remove byte swapping from PUMPENSTATUS
+  * Add inter-query pacing in batch polling loop
+
+ -- Juerg Haefliger <juergh@proton.me>  Fri, 16 Oct 2026 18:03:22 +0200
+
 elster2mqtt (0.2.0) unstable; urgency=medium
 
   * Add cent_val formatter support for heating curve slopes.
