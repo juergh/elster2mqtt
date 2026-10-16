@@ -59,8 +59,11 @@ data:
     format: little_endian
 
   # Heizkurve & Regelung
-  - name: HEIZKURVE_HK_2
+  - name: HEIZKURVE_HK_1
     index: 601.010e
+    format: cent_val
+  - name: HEIZKURVE_HK_2
+    index: 602.010e
     format: cent_val
   - name: RAUMSOLLTEMP_I
     index: 180.0005
