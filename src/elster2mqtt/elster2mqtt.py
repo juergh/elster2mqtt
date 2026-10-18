@@ -169,6 +169,7 @@ class ElsterBus:
                 break
             m = self.bus.recv(timeout=remaining)
             if m is None:
+                time.sleep(0.01)
                 continue
             try:
                 msg = ElsterMessage(msg=m, fmt=fmt)
