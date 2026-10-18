@@ -1,0 +1,44 @@
+# Daily COP history helpers for elster2mqtt (WPM 3 / WPL 15 AS)
+# Merge as top-level blocks into configuration.yaml (NOT under mqtt:).
+#
+# Snapshots are taken on the WPM's own daily counter rollover (nonzero -> 0),
+# so no time trigger is needed: timezone differences and clock drift between
+# HA and the controller are irrelevant. Days where the COP never became valid
+# produce no sample, so averages cover valid days only.
+
+template:
+  # Fires when the WPM rolls over its daily heating counter. At that moment
+  # cop_daily_heating has just gone invalid for the new day, so this.state
+  # still holds the previous day's converged COP.
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_waermeertrag_heiz_tag_kwh
+        to: "0"
+    sensor:
+      - name: "WPMS3 COP Heizen Tageswert"
+        state: "{{ this.state if this.state | is_number else 'unknown' }}"
+        state_class: measurement
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_waermeertrag_ww_tag_kwh
+        to: "0"
+    sensor:
+      - name: "WPMS3 COP Warmwasser Tageswert"
+        state: "{{ this.state if this.state | is_number else 'unknown' }}"
+        state_class: measurement
+
+sensor:
+  - platform: statistics
+    name: "WPMS3 COP Heizen 7 Tage Mittel"
+    entity_id: sensor.wpms3_cop_heizen_tageswert
+    state_characteristic: mean
+    max_age:
+      days: 7
+
+  - platform: statistics
+    name: "WPMS3 COP Warmwasser 7 Tage Mittel"
+    entity_id: sensor.wpms3_cop_warmwasser_tageswert
+    state_characteristic: mean
+    max_age:
+      days: 7
