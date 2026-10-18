@@ -385,8 +385,24 @@ mqtt:
   binary_sensor:
     - name: "Heat Pump Compressor Active"
       state_topic: "wpms3/info"
-      value_template: "{{ value_json.verdichter_laeuft }}"
+      value_template: "{{ 'on' if value_json.verdichter_laeuft else 'off' }}"
+      payload_on: "on"
+      payload_off: "off"
       device_class: running
+
+    - name: "Heat Pump Defrost Active"
+      state_topic: "wpms3/info"
+      value_template: "{{ 'on' if value_json.abtauung_aktiv else 'off' }}"
+      payload_on: "on"
+      payload_off: "off"
+      device_class: cold
+
+    - name: "Heat Pump Booster Active"
+      state_topic: "wpms3/info"
+      value_template: "{{ 'on' if value_json.zusatzheizung_aktiv else 'off' }}"
+      payload_on: "on"
+      payload_off: "off"
+      device_class: heat
 ```
 
 ### Dashboard Setup
