@@ -98,6 +98,26 @@ views:
               - entity: sensor.wpms3_cop_warmwasser_tag
                 name: COP Warmwasser
 
+          - type: entities
+            title: COP 7-Tage Mittel
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_cop_heizen_7_tage_mittel
+                name: COP Heizen (7 Tage)
+                icon: mdi:chart-line
+              - entity: sensor.wpms3_cop_warmwasser_7_tage_mittel
+                name: COP Warmwasser (7 Tage)
+                icon: mdi:chart-line
+
+          - type: history-graph
+            title: COP Tageswerte (7 Tage)
+            hours_to_show: 168
+            entities:
+              - entity: sensor.wpms3_cop_heizen_tageswert
+                name: COP Heizen
+              - entity: sensor.wpms3_cop_warmwasser_tageswert
+                name: COP Warmwasser
+
       # ==========================================
       # Column 3: Hydraulics & Temperatures
       # ==========================================
