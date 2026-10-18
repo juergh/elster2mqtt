@@ -270,7 +270,7 @@ In hydraulic schemas with a combi/buffer tank and heating circuit mixing valve (
 
 ### 2. Operational States & Component Decoding
 
-`elster2mqtt` decodes the 16-bit status word (`PUMPENSTATUS` on `180.01d2`), compressor speed, and active defrost status into human-readable states published to `<topic_prefix>status` and included in the `<topic_prefix>info` JSON payload:
+`elster2mqtt` decodes the 16-bit status word (`PUMPENSTATUS` on `180.01d2`) and the active defrost status into human-readable states published to `<topic_prefix>status` and included in the `<topic_prefix>info` JSON payload:
 
 | Operating State (`betriebszustand`) | Meaning |
 | :--- | :--- |
@@ -282,18 +282,26 @@ In hydraulic schemas with a combi/buffer tank and heating circuit mixing valve (
 | **`heizen`** | Space heating active (radiator / buffer heating) |
 | **`standby`** | Compressor idle, no active heating demand |
 
-The 16-bit status word provides real-time state for individual actuators:
+The bit map below was verified empirically on a WPM 3 with firmware 390-08 by correlating the raw status word with hot gas temperature and utility lock events:
 
 | Bit | Hex Mask | Component / Meaning |
 | :--- | :--- | :--- |
-| **Bit 0** | `0x0001` | **Compressor 1 running** (`verdichter_laeuft`) |
-| **Bit 1** | `0x0002` | Booster heater stage 1 (`zusatzheizung_stufe_1`) |
-| **Bit 2** | `0x0004` | Booster heater stage 2 (`zusatzheizung_stufe_2`) |
-| **Bit 3** | `0x0008` | Buffer charging pump |
-| **Bit 4** | `0x0010` | Domestic hot water charging pump (`warmwasserpumpe`) |
-| **Bit 5** | `0x0020` | Heating circuit pump (`heizkreispumpe`) |
-| **Bit 8** | `0x0100` | Utility lock active (`evu_sperre`) |
-| **Bit 9** | `0x0200` | Heat pump source / brine / fan active (`quellenpumpe`) |
+| **Bit 0** | `0x0001` | **Compressor running** — verified (`verdichter_laeuft`) |
+| **Bit 1** | `0x0002` | Booster heater stage 1 — unverified (`zusatzheizung_stufe_1`) |
+| **Bit 2** | `0x0004` | Booster heater stage 2 — unverified (`zusatzheizung_stufe_2`) |
+| **Bit 3** | `0x0008` | Buffer charging pump — unverified |
+| **Bit 4** | `0x0010` | Constant configuration mask — not a live state |
+| **Bit 5** | `0x0020` | Constant configuration mask — not a live state |
+| **Bit 7** | `0x0080` | Mixing valve driving open — verified (`mischer_auf`) |
+| **Bit 8** | `0x0100` | Utility lock active — verified (`evu_sperre`) |
+| **Bit 9** | `0x0200` | Constant configuration mask — not a live state |
+
+Because no live domestic hot water pump bit exists on this firmware, the hot water versus heating phase is derived from the tank temperatures (the controller prioritizes DHW over space heating).
+
+Firmware caveats (390-08):
+- `ISTDREHZAHL_VERDICHTER` (`500.063e`) always reports 0, even while the compressor runs; compressor detection relies on the status word.
+- `LAUFZEIT_VERDICHTER_HEIZEN` (`500.07fc`) saturates at 9999; the hot water hours counter (`500.0802`) appears valid.
+- Heating circuit registers on the virtual circuit nodes answer on a slow internal cycle and can take several seconds.
 
 ---
 
@@ -311,7 +319,7 @@ The 16-bit status word provides real-time state for individual actuators:
    - Keep DHW target temperatures at 48–50 °C rather than 55–60 °C.
    - Schedule DHW production during early afternoon hours when ambient air temperature is highest, maximizing air-source COP.
 5. **Prevent Short-Cycling (Takten):**
-   - Inverter heat pumps should run continuous modulation cycles lasting 45–90+ minutes. Monitor compressor speed (`ISTDREHZAHL_VERDICHTER`) to confirm modulation at 25–50 Hz.
+   - Inverter heat pumps should run continuous modulation cycles lasting 45–90+ minutes. Monitor compressor cycles via the operating state (`betriebszustand`) and hot gas temperature (`HEISSGAS_TEMP`); note that `ISTDREHZAHL_VERDICHTER` reports 0 on firmware 390-08.
 
 ---
 
