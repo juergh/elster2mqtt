@@ -9,7 +9,7 @@ mqtt:
 can:
   interface: can0
   sender: 680
-  timeout: 5
+  timeout: 10
 
 data:
   # Heizung
