@@ -405,6 +405,16 @@ mqtt:
       device_class: heat
 ```
 
+### Daily COP History & Rolling Averages
+
+`cop_daily_heating` and `cop_daily_ww` evolve throughout the day and reset at midnight. To track seasonal performance trends without clock or timezone fragility, `etc/homeassistant-cop-history.yaml` provides event-driven trigger-based template sensors that detect when the controller rolls over its daily counters (resetting to 0) to capture the previous day's final converged COP and compute a 7-day rolling average.
+
+To install:
+1. Merge the `template:` and `sensor:` blocks from `etc/homeassistant-cop-history.yaml` into your `configuration.yaml` as top-level sections (not under `mqtt:`).
+2. Go to **Developer Tools** -> **YAML** -> reload **Template entities**.
+3. Restart Home Assistant to initialize the `statistics` sensors.
+4. *(Optional)* To change the averaging window from 7 to 30 days, change `days: 7` to `days: 30` in the two statistics sensor blocks.
+
 ### Dashboard Setup
 
 A ready-to-use Lovelace dashboard configuration is provided in `etc/homeassistant-dashboard.yaml`. To import it:
