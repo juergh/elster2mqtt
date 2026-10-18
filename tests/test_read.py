@@ -111,7 +111,7 @@ def test_read_simulate():
 
 def test_derive_operational_state():
     state, comp_running, comps, booster, defrost = derive_operational_state(
-        {"pumpenstatus": 0, "istdrehzahl_verdichter": 0}
+        {"pumpenstatus": 560, "istdrehzahl_verdichter": 0}
     )
     assert state == "standby"
     assert not comp_running
@@ -120,29 +120,39 @@ def test_derive_operational_state():
     assert comps == []
 
     state, comp_running, comps, _, _ = derive_operational_state(
-        {"pumpenstatus": 0x0221, "istdrehzahl_verdichter": 0}
+        {"pumpenstatus": 561,
+         "warmwasser_isttemperatur": 56.5,
+         "warmwasser_solltemperatur": 52.0}
     )
     assert state == "heizen"
     assert comp_running
-    assert "verdichter" in comps
-    assert "heizkreispumpe" in comps
-    assert "quellenpumpe" in comps
+    assert comps == ["verdichter"]
 
     state, comp_running, comps, _, _ = derive_operational_state(
-        {"pumpenstatus": 0x0010, "istdrehzahl_verdichter": 45}
+        {"pumpenstatus": 561,
+         "warmwasser_isttemperatur": 45.0,
+         "warmwasser_solltemperatur": 52.0}
     )
     assert state == "warmwasser"
     assert comp_running
-    assert "warmwasserpumpe" in comps
+    assert comps == ["verdichter"]
+
+    state, comp_running, comps, _, _ = derive_operational_state(
+        {"pumpenstatus": 0, "istdrehzahl_verdichter": 45,
+         "warmwasser_isttemperatur": 56.5,
+         "warmwasser_solltemperatur": 52.0}
+    )
+    assert state == "heizen"
+    assert comp_running
 
     state, _, _, _, defrost = derive_operational_state(
-        {"abtauungaktiv": 1, "pumpenstatus": 1}
+        {"abtauungaktiv": 1, "pumpenstatus": 561}
     )
     assert state == "abtauen"
     assert defrost
 
     state, comp_running, comps, booster, _ = derive_operational_state(
-        {"pumpenstatus": 0x0002, "istdrehzahl_verdichter": 0}
+        {"pumpenstatus": 0x0232}
     )
     assert state == "zusatzheizung"
     assert not comp_running
@@ -150,20 +160,24 @@ def test_derive_operational_state():
     assert "zusatzheizung_stufe_1" in comps
 
     state, comp_running, comps, booster, _ = derive_operational_state(
-        {"pumpenstatus": 0x0003, "istdrehzahl_verdichter": 0}
+        {"pumpenstatus": 0x0233}
     )
     assert state == "heizen_booster"
     assert comp_running
     assert booster
 
-    state, _, comps, _, _ = derive_operational_state({"pumpenstatus": 0x0100})
+    state, _, comps, _, _ = derive_operational_state({"pumpenstatus": 816})
     assert state == "evu_sperre"
-    assert "evu_sperre" in comps
+    assert comps == ["evu_sperre"]
+
+    state, _, comps, _, _ = derive_operational_state({"pumpenstatus": 688})
+    assert state == "standby"
+    assert comps == ["mischer_auf"]
 
 
 def test_synthesize_metrics():
     info = {
-        "pumpenstatus": 0x0221,
+        "pumpenstatus": 561,
         "waermeertrag_heiz_sum_mwh": 74,
         "waermeertrag_heiz_sum_kwh": 128,
         "el_aufnahmeleistung_heiz_sum_mwh": 19,

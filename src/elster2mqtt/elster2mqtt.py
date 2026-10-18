@@ -219,7 +219,15 @@ class MqttClient:
 
 
 def derive_operational_state(info):
-    """Derive operational state and active components from telemetry."""
+    """Derive operational state and active components from telemetry.
+
+    Bit map of PUMPENSTATUS (180.01d2), empirically verified on WPM 3
+    firmware 390-08: bit 0 compressor, bits 1/2 booster heater stages,
+    bit 7 mixer opening, bit 8 utility lock. Bits 4, 5 and 9 form a
+    constant configuration mask on this firmware and are not live states.
+    The hot water versus heating phase is derived from the tank
+    temperatures because no live DHW pump bit exists on this firmware.
+    """
     pumpenstatus = int(info.get("pumpenstatus") or 0)
     verdichter_speed = float(info.get("istdrehzahl_verdichter") or 0)
     abtauung = int(info.get("abtauungaktiv") or 0)
@@ -228,9 +236,7 @@ def derive_operational_state(info):
     dhc1_active = bool(pumpenstatus & 0x0002)
     dhc2_active = bool(pumpenstatus & 0x0004)
     booster_active = dhc1_active or dhc2_active
-    dhw_pump_active = bool(pumpenstatus & 0x0010)
-    heating_pump_active = bool(pumpenstatus & 0x0020)
-    source_pump_active = bool(pumpenstatus & 0x0200)
+    mixer_opening = bool(pumpenstatus & 0x0080)
     evu_lock = bool(pumpenstatus & 0x0100)
 
     active_components = []
@@ -240,14 +246,18 @@ def derive_operational_state(info):
         active_components.append("zusatzheizung_stufe_1")
     if dhc2_active:
         active_components.append("zusatzheizung_stufe_2")
-    if dhw_pump_active:
-        active_components.append("warmwasserpumpe")
-    if heating_pump_active:
-        active_components.append("heizkreispumpe")
-    if source_pump_active:
-        active_components.append("quellenpumpe")
+    if mixer_opening:
+        active_components.append("mischer_auf")
     if evu_lock:
         active_components.append("evu_sperre")
+
+    dhw_demand = False
+    try:
+        ww_ist = float(info.get("warmwasser_isttemperatur") or 0)
+        ww_soll = float(info.get("warmwasser_solltemperatur") or 0)
+        dhw_demand = ww_soll > 0 and ww_ist < ww_soll
+    except (ValueError, TypeError):
+        pass
 
     if evu_lock:
         operating_state = "evu_sperre"
@@ -257,7 +267,7 @@ def derive_operational_state(info):
         operating_state = "zusatzheizung"
     elif booster_active and compressor_running:
         operating_state = "heizen_booster"
-    elif compressor_running and dhw_pump_active:
+    elif compressor_running and dhw_demand:
         operating_state = "warmwasser"
     elif compressor_running:
         operating_state = "heizen"
