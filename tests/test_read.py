@@ -1,7 +1,7 @@
-import can
 import pytest
 
-from elster2mqtt.elster2mqtt import (ElsterBus,
+from elster2mqtt.elster2mqtt import (CanFrame,
+                                     ElsterBus,
                                      ElsterReadTimedOut,
                                      TYPE_REQUEST,
                                      TYPE_RESPONSE,
@@ -20,7 +20,7 @@ class DummyCanBus:
 
     def recv(self, timeout=None):
         data = encode_elster_data(self.sender, self.register, self.value)
-        return can.Message(arbitration_id=self.receiver, data=data)
+        return CanFrame(arbitration_id=self.receiver, data=data)
 
     def send(self, msg):
         msg_type, receiver, register, value = decode_elster_data(msg.data, size=5)
@@ -72,8 +72,8 @@ def test_read_ignores_mismatched_register():
     class MultiMsgCanBus:
         def __init__(self):
             self.messages = [
-                can.Message(arbitration_id=0x180, data=encode_elster_data(0x123, 0x0001, 999)),
-                can.Message(arbitration_id=0x180, data=encode_elster_data(0x123, 0xdeaf, 0xdead)),
+                CanFrame(arbitration_id=0x180, data=encode_elster_data(0x123, 0x0001, 999)),
+                CanFrame(arbitration_id=0x180, data=encode_elster_data(0x123, 0xdeaf, 0xdead)),
             ]
 
         def send(self, msg):

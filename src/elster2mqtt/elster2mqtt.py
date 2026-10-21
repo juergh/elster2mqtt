@@ -4,14 +4,22 @@
 
 import argparse
 import json
+import select
+import socket
+import struct
 import time
 
-import can
 import paho.mqtt.client as mqtt
 import yaml
 
 TYPE_REQUEST = 0x01
 TYPE_RESPONSE = 0x02
+
+CAN_FRAME_SIZE = 16
+CAN_MAX_DLEN = 8
+CAN_EFF_FLAG = 0x80000000
+CAN_RTR_FLAG = 0x40000000
+CAN_ERR_FLAG = 0x20000000
 
 
 class ElsterError(Exception):
@@ -86,14 +94,56 @@ def twos_complement(value):
     return value
 
 
-class ElsterMessage(can.Message):
+class CanFrame:
+    """Minimal CAN frame: arbitration id plus payload"""
+    def __init__(self, arbitration_id, data):
+        self.arbitration_id = arbitration_id
+        self.data = data
+
+
+class SocketCanBus:
+    """Minimal raw SocketCAN transport"""
+    def __init__(self, channel):
+        self.socket = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+        self.socket.bind((channel,))
+
+    def shutdown(self):
+        self.socket.close()
+
+    def send(self, frame):
+        can_id = frame.arbitration_id
+        data = bytes(frame.data)[:CAN_MAX_DLEN]
+        if can_id > 0x7FF:
+            can_id |= CAN_EFF_FLAG
+        packet = struct.pack("=IB3x", can_id, len(data)) + data
+        packet += b"\x00" * (CAN_FRAME_SIZE - len(packet))
+        self.socket.send(packet)
+
+    def recv(self, timeout=None):
+        ready, _, _ = select.select([self.socket], [], [], timeout)
+        if not ready:
+            return None
+        raw = self.socket.recv(CAN_FRAME_SIZE)
+        can_id, = struct.unpack_from("=I", raw)
+        if can_id & (CAN_RTR_FLAG | CAN_ERR_FLAG):
+            return None
+        dlc = raw[4]
+        data = raw[8:8 + dlc]
+        if can_id & CAN_EFF_FLAG:
+            arbitration_id = can_id & 0x1FFFFFFF
+        else:
+            arbitration_id = can_id & 0x7FF
+        return CanFrame(arbitration_id, data)
+
+
+class ElsterMessage:
     """Elster message class"""
     def __init__(self, sender=None, receiver=None, register=None, msg=None, fmt=None):
         if msg:
             self.fmt = fmt
             self.sender = msg.arbitration_id
             self.type, self.receiver, self.register, self.value = decode_elster_data(msg.data)
-            data = msg.data
+            self.data = msg.data
         else:
             self.sender = sender
             self.receiver = receiver
@@ -101,8 +151,11 @@ class ElsterMessage(can.Message):
             self.fmt = fmt
             self.type = TYPE_REQUEST
             self.value = None
-            data = encode_elster_data(self.receiver, self.register)
-        super().__init__(arbitration_id=self.sender, data=data, is_extended_id=False)
+            self.data = encode_elster_data(self.receiver, self.register)
+
+    @property
+    def arbitration_id(self):
+        return self.sender
 
     @property
     def formatted_value(self):
@@ -129,7 +182,7 @@ class ElsterBus:
 
     def __enter__(self):
         if not self.simulate:
-            self.bus = can.Bus(channel=self.channel, interface="socketcan")
+            self.bus = SocketCanBus(self.channel)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
