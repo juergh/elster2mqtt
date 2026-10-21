@@ -9,7 +9,6 @@ import socket
 import struct
 import time
 
-import paho.mqtt.client as mqtt
 import yaml
 
 TYPE_REQUEST = 0x01
@@ -249,6 +248,8 @@ class MqttClient:
 
     def __enter__(self):
         if not self.simulate:
+            import paho.mqtt.client as mqtt
+
             if hasattr(mqtt, "CallbackAPIVersion"):
                 self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
             else:
