@@ -212,7 +212,18 @@ class ElsterBus:
 
         # Send the read request
         self.bus.send(msg)
+        try:
+            return self._recv_response(receiver, register, fmt, timeout)
+        except ElsterReadTimedOut:
+            pass
 
+        # Resend the request once: the bus has been quiet since the first
+        # attempt, so controllers that ignored the query while busy usually
+        # answer the resend.
+        self.bus.send(msg)
+        return self._recv_response(receiver, register, fmt, timeout)
+
+    def _recv_response(self, receiver, register, fmt, timeout):
         # Wait for the response
         start_time = time.time()
         while True:

@@ -68,6 +68,33 @@ def test_read_timeout():
         elster.read("FOO", timeout=0.05)
 
 
+def test_read_retries_once_after_timeout():
+    class RetryCanBus:
+        def __init__(self):
+            self.sends = 0
+
+        def send(self, msg):
+            self.sends += 1
+
+        def recv(self, timeout=None):
+            if self.sends < 2:
+                return None
+            data = encode_elster_data(0x123, 0xdeaf, 0xdead)
+            return CanFrame(arbitration_id=0x180, data=data)
+
+    config = {
+        "can": {"interface": "dummy", "sender": "123"},
+        "data": [{"name": "FOO", "index": "180.deaf", "format": None}],
+    }
+    elster = ElsterBus(config)
+    bus = RetryCanBus()
+    elster.bus = bus
+    msg = elster.read("FOO", timeout=0.05)
+    assert bus.sends == 2
+    assert msg.register == 0xdeaf
+    assert msg.value == 0xdead
+
+
 def test_read_ignores_mismatched_register():
     class MultiMsgCanBus:
         def __init__(self):
