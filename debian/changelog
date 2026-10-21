@@ -1,3 +1,13 @@
+elster2mqtt (0.2.2) unstable; urgency=medium
+
+  * Avoid busy-wait spinning during CAN receive timeouts.
+  * Fix PUMPENSTATUS decoding for WPM 3 firmware.
+  * Replace python-can with direct SocketCAN access.
+  * Defer MQTT client import to client construction.
+  * Resend read request once after a timeout.
+
+ -- Juerg Haefliger <juergh@proton.me>  Wed, 21 Oct 2026 15:00:00 +0200
+
 elster2mqtt (0.2.1) unstable; urgency=medium
 
   * Ignore unrelated ambient CAN bus frames during read
