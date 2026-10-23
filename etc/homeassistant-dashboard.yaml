@@ -12,7 +12,7 @@ views:
     icon: mdi:heat-pump-outline
     cards:
       # ==========================================
-      # Column 1: Live Status & Inverter
+      # Column 1: Status & Operation
       # ==========================================
       - type: vertical-stack
         cards:
@@ -23,16 +23,19 @@ views:
               - entity: sensor.wpms3_betriebszustand
                 name: Aktueller Zustand
                 icon: mdi:heat-pump-outline
+              - entity: sensor.wpms3_aktive_komponenten
+                name: Aktive Komponenten
+                icon: mdi:pump
               - entity: binary_sensor.wpms3_verdichter_aktiv
                 name: Verdichter
               - entity: binary_sensor.wpms3_abtauung_aktiv
                 name: Abtauung
               - entity: binary_sensor.wpms3_zusatzheizung_aktiv
-                name: Zusatzheizung (DHC)
+                name: Zusatzheizung (NHZ)
 
           - type: gauge
             entity: sensor.wpms3_verdichter_drehzahl
-            name: Inverter Verdichter
+            name: Verdichter Ist-Drehzahl
             min: 0
             max: 100
             unit: Hz
@@ -42,17 +45,25 @@ views:
               yellow: 60
               red: 85
 
-          - type: gauge
-            entity: sensor.wpms3_heissgastemperatur
-            name: Heissgastemperatur
-            min: 20
-            max: 110
-            unit: °C
-            needle: true
-            severity:
-              green: 20
-              yellow: 75
-              red: 95
+          - type: entities
+            title: Regelung
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_verdichter_solldrehzahl
+                name: Verdichter Soll-Drehzahl
+                icon: mdi:fan
+              - entity: sensor.wpms3_regelintegral
+                name: Regelintegral
+                icon: mdi:trending-up
+
+          - type: history-graph
+            title: Betriebsstatus Verlauf (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.wpms3_betriebszustand
+                name: Betriebszustand
+              - entity: binary_sensor.wpms3_verdichter_aktiv
+                name: Verdichter Aktiv
 
       # ==========================================
       # Column 2: Efficiency & COP
@@ -98,17 +109,6 @@ views:
               - entity: sensor.wpms3_cop_warmwasser_tag
                 name: COP Warmwasser
 
-          - type: entities
-            title: COP 7-Tage Mittel
-            show_header_toggle: false
-            entities:
-              - entity: sensor.wpms3_cop_heizen_7_tage_mittel
-                name: COP Heizen (7 Tage)
-                icon: mdi:chart-line
-              - entity: sensor.wpms3_cop_warmwasser_7_tage_mittel
-                name: COP Warmwasser (7 Tage)
-                icon: mdi:chart-line
-
           - type: history-graph
             title: COP Tageswerte (7 Tage)
             hours_to_show: 168
@@ -119,7 +119,7 @@ views:
                 name: COP Warmwasser
 
       # ==========================================
-      # Column 3: Hydraulics & Temperatures
+      # Column 3: Hydraulics & Tuning
       # ==========================================
       - type: vertical-stack
         cards:
@@ -133,6 +133,8 @@ views:
                 name: WP Vorlauf Ist
               - entity: sensor.wpms3_ruecklaufisttemperatur
                 name: WP Rücklauf Ist
+              - entity: sensor.wpms3_spreizung
+                name: Spreizung (Vorlauf - Rücklauf)
               - entity: sensor.wpms3_pufferisttemperatur
                 name: Puffer Ist
               - entity: sensor.wpms3_puffersolltemperatur
@@ -149,7 +151,24 @@ views:
                 name: Raumsolltemperatur
 
           - type: entities
-            title: Heizkurven & Laufzeiten
+            title: Kältekreis
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_heissgastemperatur
+                name: Heissgastemperatur
+              - entity: sensor.wpms3_druck_hochdruck
+                name: Druck Hochdruck
+              - entity: sensor.wpms3_druck_niederdruck
+                name: Druck Niederdruck
+              - entity: sensor.wpms3_wasservolumenstrom
+                name: Wasservolumenstrom
+              - entity: sensor.wpms3_spannung_inverter
+                name: Inverter Spannung
+              - entity: sensor.wpms3_strom_inverter
+                name: Inverter Strom
+
+          - type: entities
+            title: Heizkurven & Zähler
             show_header_toggle: false
             entities:
               - entity: sensor.wpms3_heizkurve_hk_1_puffer
@@ -158,24 +177,8 @@ views:
                 name: Heizkurve HK 2 (Radiatoren)
               - entity: sensor.wpms3_starts_abtauung
                 name: Starts Abtauung Total
-              - entity: sensor.wpms3_laufzeit_verdichter_heizen
-                name: Verdichterlaufzeit Heizen
               - entity: sensor.wpms3_laufzeit_verdichter_warmwasser
                 name: Verdichterlaufzeit Warmwasser
-
-      # ==========================================
-      # Column 4: 24h Trends & History
-      # ==========================================
-      - type: vertical-stack
-        cards:
-          - type: history-graph
-            title: Betriebsstatus Verlauf (24h)
-            hours_to_show: 24
-            entities:
-              - entity: sensor.wpms3_betriebszustand
-                name: Betriebszustand
-              - entity: binary_sensor.wpms3_verdichter_aktiv
-                name: Verdichter Aktiv
 
           - type: history-graph
             title: Temperaturverlauf (24h)

@@ -8,6 +8,11 @@ mqtt:
       state_topic: "wpms3/status"
       icon: "mdi:heat-pump-outline"
 
+    - name: "WPMS3 Aktive Komponenten"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.aktive_komponenten | join(', ') if value_json.aktive_komponenten else 'keine' }}"
+      icon: "mdi:pump"
+
     # --- Temperatures ---
     - name: "WPMS3 Aussentemperatur"
       state_topic: "wpms3/info"
@@ -98,6 +103,53 @@ mqtt:
       unit_of_measurement: "Hz"
       icon: "mdi:fan"
 
+    - name: "WPMS3 Verdichter Solldrehzahl"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.solldrehzahl_verdichter }}"
+      unit_of_measurement: "Hz"
+      icon: "mdi:fan"
+
+    - name: "WPMS3 Regelintegral"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.integral_regelabweichung }}"
+      icon: "mdi:trending-up"
+
+    - name: "WPMS3 Druck Hochdruck"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.druck_hochdruck }}"
+      unit_of_measurement: "bar"
+      icon: "mdi:gauge"
+
+    - name: "WPMS3 Druck Niederdruck"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.druck_niederdruck }}"
+      unit_of_measurement: "bar"
+      icon: "mdi:gauge"
+
+    - name: "WPMS3 Wasservolumenstrom"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.wp_wasservolumenstrom }}"
+      unit_of_measurement: "l/min"
+      icon: "mdi:water-pump"
+
+    - name: "WPMS3 Spannung Inverter"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.spannung_inverter }}"
+      unit_of_measurement: "V"
+      icon: "mdi:flash"
+
+    - name: "WPMS3 Strom Inverter"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.strom_inverter }}"
+      unit_of_measurement: "A"
+      icon: "mdi:flash"
+
+    - name: "WPMS3 Spreizung"
+      state_topic: "wpms3/info"
+      value_template: "{{ (value_json.vorlaufisttemperatur - value_json.ruecklaufisttemperatur) | round(1) }}"
+      unit_of_measurement: "K"
+      icon: "mdi:thermometer-lines"
+
     - name: "WPMS3 Heissgastemperatur"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.heissgas_temp }}"
@@ -110,12 +162,6 @@ mqtt:
       value_template: "{{ value_json.starts_abtauung }}"
       state_class: total_increasing
       icon: "mdi:snowflake-melt"
-
-    - name: "WPMS3 Laufzeit Verdichter Heizen"
-      state_topic: "wpms3/info"
-      value_template: "{{ value_json.laufzeit_verdichter_heizen }}"
-      unit_of_measurement: "h"
-      state_class: total_increasing
 
     - name: "WPMS3 Laufzeit Verdichter Warmwasser"
       state_topic: "wpms3/info"
