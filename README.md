@@ -4,6 +4,11 @@
 
 It supports periodic batch publishing (formatted JSON topic), single register polling, and offline simulation for local development.
 
+A complete, empirically verified register and protocol reference for the
+WPM 3 / WPL 15 AS combination — including the relay-tested `180.01d2`
+bit map, split 32-bit energy counters, and live process data registers —
+is available in [docs/WPM3_REGISTERS.md](docs/WPM3_REGISTERS.md).
+
 ---
 
 ## Features
@@ -282,24 +287,34 @@ In hydraulic schemas with a combi/buffer tank and heating circuit mixing valve (
 | **`heizen`** | Space heating active (radiator / buffer heating) |
 | **`standby`** | Compressor idle, no active heating demand |
 
-The bit map below was verified empirically on a WPM 3 with firmware 390-08 by correlating the raw status word with hot gas temperature and utility lock events:
+The bit map below was verified empirically on a WPM 3 with firmware
+390-08 by activating every relay individually via RELAISTEST ANLAGE
+while sampling the status word (see
+[docs/WPM3_REGISTERS.md](docs/WPM3_REGISTERS.md) for the full
+reference, including the `500.4E5E`/`500.4E7E` relay command bitmaps):
 
 | Bit | Hex Mask | Component / Meaning |
 | :--- | :--- | :--- |
-| **Bit 0** | `0x0001` | **Compressor running** — verified (`verdichter_laeuft`) |
-| **Bit 1** | `0x0002` | Booster heater stage 1 — unverified (`zusatzheizung_stufe_1`) |
-| **Bit 2** | `0x0004` | Booster heater stage 2 — unverified (`zusatzheizung_stufe_2`) |
-| **Bit 3** | `0x0008` | Buffer charging pump — unverified |
-| **Bit 4** | `0x0010` | Constant configuration mask — not a live state |
-| **Bit 5** | `0x0020` | Constant configuration mask — not a live state |
-| **Bit 7** | `0x0080` | Mixing valve driving open — verified (`mischer_auf`) |
-| **Bit 8** | `0x0100` | Utility lock active — verified (`evu_sperre`) |
-| **Bit 9** | `0x0200` | Constant configuration mask — not a live state |
+| **Bit 0** | `0x0001` | Pufferladepumpe 1 (buffer charging pump 1) |
+| **Bit 1** | `0x0002` | Pufferladepumpe 2 |
+| **Bit 2** | `0x0004` | Quellenpumpe |
+| **Bit 3** | `0x0008` | Solarpumpe |
+| **Bit 4** | `0x0010` | Heizkreispumpe |
+| **Bit 5** | `0x0020` | Mischerpumpe |
+| **Bit 6** | `0x0040` | Warmwasserladepumpe (DHW loading pump) |
+| **Bit 7** | `0x0080` | Mischer AUF (mixer driving open) |
+| **Bit 8** | `0x0100` | Mischer ZU (mixer driving closed) |
+| **Bit 9** | `0x0200` | Zirkulationspumpe (DHW circulation) |
+| **Bit 10** | `0x0400` | 2. Wärmeerzeuger (electric booster heater) |
 
-Because no live domestic hot water pump bit exists on this firmware, the hot water versus heating phase is derived from the tank temperatures (the controller prioritizes DHW over space heating).
+The status word carries no compressor and no utility-lock bit. Bit 0
+(buffer charging pump 1) runs whenever the heat pump delivers heat and
+therefore serves as a proxy for compressor activity; the utility lock
+has its own registers (`0x0074`/`0x01D3`/`0xFDAC`).
 
 Firmware caveats (390-08):
-- `ISTDREHZAHL_VERDICHTER` (`500.063e`) always reports 0, even while the compressor runs; compressor detection relies on the status word.
+- The live compressor speed is reported by `500.063b` (Ist) and
+  `500.063d` (Soll) in integer Hz; `500.063e`/`500.063c` stay at 0.
 - `LAUFZEIT_VERDICHTER_HEIZEN` (`500.07fc`) saturates at 9999; the hot water hours counter (`500.0802`) appears valid.
 - Heating circuit registers on the virtual circuit nodes answer on a slow internal cycle and can take several seconds.
 
