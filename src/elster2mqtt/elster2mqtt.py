@@ -286,53 +286,38 @@ class MqttClient:
 def derive_operational_state(info):
     """Derive operational state and active components from telemetry.
 
-    Bit map of PUMPENSTATUS (180.01d2), empirically verified on WPM 3
-    firmware 390-08: bit 0 compressor, bits 1/2 booster heater stages,
-    bit 7 mixer opening, bit 8 utility lock. Bits 4, 5 and 9 form a
-    constant configuration mask on this firmware and are not live states.
-    The hot water versus heating phase is derived from the tank
-    temperatures because no live DHW pump bit exists on this firmware.
+    Bit map of PUMPENSTATUS (180.01d2), verified by activating every
+    relay individually via RELAISTEST ANLAGE on WPM 3 firmware 390-08
+    (see docs/WPM3_REGISTERS.md): the word mirrors the system's physical
+    pump and valve outputs. It carries no compressor and no utility-lock
+    bit. Bit 0 (buffer charging pump 1) runs whenever the heat pump
+    delivers heat, so it serves as the compressor proxy; a live speed
+    reading is accepted as an additional signal.
     """
     pumpenstatus = int(info.get("pumpenstatus") or 0)
     verdichter_speed = float(info.get("istdrehzahl_verdichter") or 0)
     abtauung = int(info.get("abtauungaktiv") or 0)
 
+    components = (
+        ("pufferladepumpe_1", 0x0001),
+        ("pufferladepumpe_2", 0x0002),
+        ("quellenpumpe", 0x0004),
+        ("solarpumpe", 0x0008),
+        ("heizkreispumpe", 0x0010),
+        ("mischerpumpe", 0x0020),
+        ("warmwasserladepumpe", 0x0040),
+        ("mischer_auf", 0x0080),
+        ("mischer_zu", 0x0100),
+        ("zirkulationspumpe", 0x0200),
+        ("zusatzheizung", 0x0400),
+    )
+    active_components = [name for name, mask in components if pumpenstatus & mask]
+    booster_active = bool(pumpenstatus & 0x0400)
     compressor_running = bool(pumpenstatus & 0x0001) or (verdichter_speed > 0)
-    dhc1_active = bool(pumpenstatus & 0x0002)
-    dhc2_active = bool(pumpenstatus & 0x0004)
-    booster_active = dhc1_active or dhc2_active
-    mixer_opening = bool(pumpenstatus & 0x0080)
-    evu_lock = bool(pumpenstatus & 0x0100)
 
-    active_components = []
-    if compressor_running:
-        active_components.append("verdichter")
-    if dhc1_active:
-        active_components.append("zusatzheizung_stufe_1")
-    if dhc2_active:
-        active_components.append("zusatzheizung_stufe_2")
-    if mixer_opening:
-        active_components.append("mischer_auf")
-    if evu_lock:
-        active_components.append("evu_sperre")
-
-    dhw_demand = False
-    try:
-        ww_ist = float(info.get("warmwasser_isttemperatur") or 0)
-        ww_soll = float(info.get("warmwasser_solltemperatur") or 0)
-        dhw_demand = ww_soll > 0 and ww_ist < ww_soll
-    except (ValueError, TypeError):
-        pass
-
-    if evu_lock:
-        operating_state = "evu_sperre"
-    elif abtauung == 1:
+    if abtauung == 1:
         operating_state = "abtauen"
-    elif booster_active and not compressor_running:
-        operating_state = "zusatzheizung"
-    elif booster_active and compressor_running:
-        operating_state = "heizen_booster"
-    elif compressor_running and dhw_demand:
+    elif pumpenstatus & 0x0040:
         operating_state = "warmwasser"
     elif compressor_running:
         operating_state = "heizen"
