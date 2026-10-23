@@ -53,8 +53,6 @@ data:
     format: dec_val
 
   # Misc
-  - name: FEHLER
-    index: 180.0001
   - name: PUMPENSTATUS
     index: 180.01d2
 
@@ -68,29 +66,54 @@ data:
   - name: RAUMSOLLTEMP_I
     index: 180.0005
     format: dec_val
+  - name: INTEGRAL_REGELABWEICHUNG
+    index: 500.0917
 
   # Inverter & Verdichter (WPL 15 AS)
   - name: ABTAUUNGAKTIV
     index: 500.0061
   - name: ISTDREHZAHL_VERDICHTER
-    index: 500.063e
+    index: 500.063b
+  - name: SOLLDREHZAHL_VERDICHTER
+    index: 500.063d
   - name: HEISSGAS_TEMP
     index: 500.0265
     format: dec_val
   - name: STARTS_ABTAUUNG
     index: 500.0806
-  - name: LAUFZEIT_VERDICHTER_HEIZEN
-    index: 500.07fc
   - name: LAUFZEIT_VERDICHTER_WW
     index: 500.0802
+  - name: DRUCK_HOCHDRUCK
+    index: 500.07a6
+    format: cent_val
+  - name: DRUCK_NIEDERDRUCK
+    index: 500.07a7
+    format: cent_val
+  - name: WP_WASSERVOLUMENSTROM
+    index: 500.02e2
+    format: dec_val
+  - name: SPANNUNG_INVERTER
+    index: 500.06b1
+    format: dec_val
+  - name: STROM_INVERTER
+    index: 500.06b2
+    format: dec_val
 
   # Energie & Ertrag (COP / JAZ)
+  - name: WAERMEERTRAG_HEIZ_TAG_WH
+    index: 500.092e
   - name: WAERMEERTRAG_HEIZ_TAG_KWH
     index: 500.092f
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_WH
+    index: 500.091e
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
     index: 500.091f
+  - name: WAERMEERTRAG_WW_TAG_WH
+    index: 500.092a
   - name: WAERMEERTRAG_WW_TAG_KWH
     index: 500.092b
+  - name: EL_AUFNAHMELEISTUNG_WW_TAG_WH
+    index: 500.091a
   - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
     index: 500.091b
   - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
