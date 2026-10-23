@@ -336,29 +336,35 @@ def synthesize_metrics(info):
     info["zusatzheizung_aktiv"] = booster
     info["aktive_komponenten"] = components
 
-    def _combine(mwh_key, kwh_key):
-        if mwh_key in info and kwh_key in info:
-            try:
-                return (float(info[mwh_key]) * 1000.0) + float(info[kwh_key])
-            except (ValueError, TypeError):
-                return None
-        return None
+    # Energy counters split a 32-bit value across two registers whose
+    # units differ by a factor of 1000 (MWh + kWh for lifetime totals,
+    # kWh + Wh for daily totals). Combining them restores the display's
+    # resolution, which the bare integer high register loses to
+    # truncation. The low register is optional: without it the high
+    # value is still 99.9% accurate.
+    for target_key, high_key, low_key, factor, decimals in (
+        ("waermeertrag_heiz_total_kwh", "waermeertrag_heiz_sum_mwh", "waermeertrag_heiz_sum_kwh", 1, 1),
+        ("el_aufnahmeleistung_heiz_total_kwh", "el_aufnahmeleistung_heiz_sum_mwh", "el_aufnahmeleistung_heiz_sum_kwh", 1, 1),
+        ("waermeertrag_ww_total_kwh", "waermeertrag_ww_sum_mwh", "waermeertrag_ww_sum_kwh", 1, 1),
+        ("el_aufnahmeleistung_ww_total_kwh", "el_aufnahmeleistung_ww_sum_mwh", "el_aufnahmeleistung_ww_sum_kwh", 1, 1),
+        ("waermeertrag_heiz_tag_kwh", "waermeertrag_heiz_tag_kwh", "waermeertrag_heiz_tag_wh", 1000, 3),
+        ("waermeertrag_ww_tag_kwh", "waermeertrag_ww_tag_kwh", "waermeertrag_ww_tag_wh", 1000, 3),
+        ("el_aufnahmeleistung_heiz_tag_kwh", "el_aufnahmeleistung_heiz_tag_kwh", "el_aufnahmeleistung_heiz_tag_wh", 1000, 3),
+        ("el_aufnahmeleistung_ww_tag_kwh", "el_aufnahmeleistung_ww_tag_kwh", "el_aufnahmeleistung_ww_tag_wh", 1000, 3),
+    ):
+        if high_key not in info:
+            continue
+        try:
+            high = float(info[high_key])
+            low = float(info.get(low_key) or 0)
+            info[target_key] = round((high * 1000.0 + low) / factor, decimals)
+        except (ValueError, TypeError):
+            pass
 
-    heiz_heat = _combine("waermeertrag_heiz_sum_mwh", "waermeertrag_heiz_sum_kwh")
-    if heiz_heat is not None:
-        info["waermeertrag_heiz_total_kwh"] = heiz_heat
-
-    heiz_el = _combine("el_aufnahmeleistung_heiz_sum_mwh", "el_aufnahmeleistung_heiz_sum_kwh")
-    if heiz_el is not None:
-        info["el_aufnahmeleistung_heiz_total_kwh"] = heiz_el
-
-    ww_heat = _combine("waermeertrag_ww_sum_mwh", "waermeertrag_ww_sum_kwh")
-    if ww_heat is not None:
-        info["waermeertrag_ww_total_kwh"] = ww_heat
-
-    ww_el = _combine("el_aufnahmeleistung_ww_sum_mwh", "el_aufnahmeleistung_ww_sum_kwh")
-    if ww_el is not None:
-        info["el_aufnahmeleistung_ww_total_kwh"] = ww_el
+    heiz_heat = info.get("waermeertrag_heiz_total_kwh")
+    heiz_el = info.get("el_aufnahmeleistung_heiz_total_kwh")
+    ww_heat = info.get("waermeertrag_ww_total_kwh")
+    ww_el = info.get("el_aufnahmeleistung_ww_total_kwh")
 
     if heiz_heat is not None and ww_heat is not None:
         info["waermeertrag_total_kwh"] = heiz_heat + ww_heat

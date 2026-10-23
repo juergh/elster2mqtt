@@ -213,9 +213,13 @@ def test_synthesize_metrics():
         "el_aufnahmeleistung_ww_sum_mwh": 1,
         "el_aufnahmeleistung_ww_sum_kwh": 44,
         "waermeertrag_heiz_tag_kwh": 20,
+        "waermeertrag_heiz_tag_wh": 500,
         "el_aufnahmeleistung_heiz_tag_kwh": 5,
+        "el_aufnahmeleistung_heiz_tag_wh": 250,
         "waermeertrag_ww_tag_kwh": 8,
+        "waermeertrag_ww_tag_wh": 120,
         "el_aufnahmeleistung_ww_tag_kwh": 2,
+        "el_aufnahmeleistung_ww_tag_wh": 60,
     }
     state, comps = synthesize_metrics(info)
     assert state == "heizen"
@@ -230,6 +234,25 @@ def test_synthesize_metrics():
     assert info["jaz_heizung"] == 3.90
     assert info["jaz_warmwasser"] == 4.23
     assert info["jaz_total"] == 3.92
+    assert info["waermeertrag_heiz_tag_kwh"] == 20.5
+    assert info["el_aufnahmeleistung_heiz_tag_kwh"] == 5.25
+    assert info["waermeertrag_ww_tag_kwh"] == 8.12
+    assert info["el_aufnahmeleistung_ww_tag_kwh"] == 2.06
+    assert info["cop_daily_heating"] == 3.9
+    assert info["cop_daily_ww"] == 3.94
+
+
+def test_synthesize_metrics_without_wh_registers():
+    info = {
+        "pumpenstatus": 561,
+        "waermeertrag_heiz_tag_kwh": 20,
+        "el_aufnahmeleistung_heiz_tag_kwh": 5,
+        "waermeertrag_ww_tag_kwh": 8,
+        "el_aufnahmeleistung_ww_tag_kwh": 2,
+    }
+    synthesize_metrics(info)
+    assert info["waermeertrag_heiz_tag_kwh"] == 20
+    assert info["el_aufnahmeleistung_heiz_tag_kwh"] == 5
     assert info["cop_daily_heating"] == 4.0
     assert info["cop_daily_ww"] == 4.0
 
