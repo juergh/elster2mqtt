@@ -60,7 +60,7 @@ On Stiebel-Eltron systems, metrics are distributed across distinct nodes:
 | CAN Node | Typical Role | Typical Metrics |
 | :--- | :--- | :--- |
 | **`180`** | **WPM Master Controller** | Outdoor temp, buffer temp, DHW temp, room setpoint (`180.0005`), flow setpoints, pump status bitmask (`180.01d2`) |
-| **`500`** | **IWS (Outdoor Inverter Board)** | Compressor frequency (`500.063e`), hot gas temp (`500.0265`), defrost cycles (`500.0806`), compressor run hours, heat yield & electrical intake |
+| **`500`** | **IWS (Outdoor Inverter Board)** | Compressor frequency (`500.063b`), hot gas temp (`500.0265`), defrost cycles (`500.0806`), compressor run hours, heat yield & electrical intake |
 | **`601`** | **Heating Circuit 1 (HK 1)** | Heating curve slope HK 1 (`601.010e`) |
 | **`602`** | **Heating Circuit 2 (HK 2)** | Heating curve slope HK 2 (`602.010e`) |
 
@@ -123,8 +123,6 @@ data:
     format: dec_val
 
   # Misc
-  - name: FEHLER
-    index: 180.0001
   - name: PUMPENSTATUS
     index: 180.01d2
 
@@ -138,29 +136,54 @@ data:
   - name: RAUMSOLLTEMP_I
     index: 180.0005
     format: dec_val
+  - name: INTEGRAL_REGELABWEICHUNG
+    index: 500.0917
 
   # Status & Inverter Diagnostics (WPL 15 AS)
   - name: ABTAUUNGAKTIV
     index: 500.0061
   - name: ISTDREHZAHL_VERDICHTER
-    index: 500.063e
+    index: 500.063b
+  - name: SOLLDREHZAHL_VERDICHTER
+    index: 500.063d
   - name: HEISSGAS_TEMP
     index: 500.0265
     format: dec_val
   - name: STARTS_ABTAUUNG
     index: 500.0806
-  - name: LAUFZEIT_VERDICHTER_HEIZEN
-    index: 500.07fc
   - name: LAUFZEIT_VERDICHTER_WW
     index: 500.0802
+  - name: DRUCK_HOCHDRUCK
+    index: 500.07a6
+    format: cent_val
+  - name: DRUCK_NIEDERDRUCK
+    index: 500.07a7
+    format: cent_val
+  - name: WP_WASSERVOLUMENSTROM
+    index: 500.02e2
+    format: dec_val
+  - name: SPANNUNG_INVERTER
+    index: 500.06b1
+    format: dec_val
+  - name: STROM_INVERTER
+    index: 500.06b2
+    format: dec_val
 
   # Energy & Intake (for COP / JAZ calculation)
+  - name: WAERMEERTRAG_HEIZ_TAG_WH
+    index: 500.092e
   - name: WAERMEERTRAG_HEIZ_TAG_KWH
     index: 500.092f
+  - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_WH
+    index: 500.091e
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
     index: 500.091f
+  - name: WAERMEERTRAG_WW_TAG_WH
+    index: 500.092a
   - name: WAERMEERTRAG_WW_TAG_KWH
     index: 500.092b
+  - name: EL_AUFNAHMELEISTUNG_WW_TAG_WH
+    index: 500.091a
   - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
     index: 500.091b
   - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
@@ -210,7 +233,7 @@ elster2mqtt /etc/elster2mqtt.yaml --timeout 10
 elster2mqtt /etc/elster2mqtt.yaml --name AUSSENTEMPERATUR
 
 # Poll arbitrary CAN node and register (hex format: <node>.<register>)
-elster2mqtt /etc/elster2mqtt.yaml --index 500.063e
+elster2mqtt /etc/elster2mqtt.yaml --index 500.063b
 
 # Simulate operations offline
 elster2mqtt /etc/elster2mqtt.yaml --simulate-can --simulate-mqtt
@@ -280,12 +303,9 @@ In hydraulic schemas with a combi/buffer tank and heating circuit mixing valve (
 | Operating State (`betriebszustand`) | Meaning |
 | :--- | :--- |
 | **`abtauen`** | Reverse-cycle defrosting active (melting outdoor evaporator coil) |
-| **`evu_sperre`** | Electrical utility grid ripple-control lock active |
-| **`zusatzheizung`** | Pure electric immersion heater running (emergency / legionella protection) |
-| **`heizen_booster`** | Bivalent heating: Heat pump compressor + electric booster running together |
 | **`warmwasser`** | Domestic hot water heating active (charging drinking water tank) |
 | **`heizen`** | Space heating active (radiator / buffer heating) |
-| **`standby`** | Compressor idle, no active heating demand |
+| **`standby`** | Compressor idle, no active heating demand (circulation pumps may still run) |
 
 The bit map below was verified empirically on a WPM 3 with firmware
 390-08 by activating every relay individually via RELAISTEST ANLAGE
