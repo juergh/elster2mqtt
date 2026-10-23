@@ -1,3 +1,17 @@
+elster2mqtt (0.2.3) unstable; urgency=medium
+
+  * Add WPM 3 / WPL 15 AS register reference documentation.
+  * Decode PUMPENSTATUS components from the relay-verified bit map.
+  * Combine daily energy counters with their Wh registers for 1 Wh
+    resolution COP.
+  * Poll live compressor speed, pressures, flow, and inverter power.
+  * Drop dead registers from telemetry and Home Assistant entities.
+  * Track tuning metrics (Spreizung, Regelintegral) in Home Assistant.
+  * Sync README with the verified decoder and register set.
+  * Drop unused python-can dependency.
+
+ -- Juerg Haefliger <juergh@proton.me>  Fri, 23 Oct 2026 11:35:00 +0200
+
 elster2mqtt (0.2.2) unstable; urgency=medium
 
   * Avoid busy-wait spinning during CAN receive timeouts.
