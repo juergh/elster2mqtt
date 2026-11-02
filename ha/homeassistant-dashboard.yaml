@@ -184,6 +184,15 @@ views:
             title: Temperaturverlauf (24h)
             hours_to_show: 24
             entities:
+              # Betriebsphasen on top, temperatures below, room temp last:
+              # the story reads top-down: what the heat pump does, what the
+              # hydraulics do, what the living room gets out of it.
+              - entity: binary_sensor.wpms3_verdichter_aktiv
+                name: Verdichter
+              - entity: binary_sensor.wpms3_heizkreispumpe
+                name: Heizkreis
+              - entity: binary_sensor.wpms3_warmwasserladung
+                name: WW Ladung
               - entity: sensor.wpms3_aussentemperatur
                 name: Aussen
               - entity: sensor.wpms3_radiator_vorlauf_ist_hk_2
@@ -194,3 +203,5 @@ views:
                 name: Puffer
               - entity: sensor.wpms3_warmwasser_isttemperatur
                 name: Warmwasser
+              - entity: sensor.bthome_sensor_78e5_temperature
+                name: Wohnzimmer

@@ -263,6 +263,21 @@ mqtt:
       payload_off: "off"
       device_class: heat
 
+    # --- Betriebsphasen für den Temperaturverlauf im Dashboard ---
+    - name: "WPMS3 Heizkreispumpe"
+      state_topic: "wpms3/info"
+      value_template: "{{ 'on' if 'heizkreispumpe' in value_json.aktive_komponenten else 'off' }}"
+      payload_on: "on"
+      payload_off: "off"
+      device_class: running
+
+    - name: "WPMS3 Warmwasserladung"
+      state_topic: "wpms3/info"
+      value_template: "{{ 'on' if 'warmwasserladepumpe' in value_json.aktive_komponenten else 'off' }}"
+      payload_on: "on"
+      payload_off: "off"
+      device_class: running
+
 # ---
 # Daily DHW energy and COP (WPM 3 firmware 390-08 workaround)
 #
@@ -290,6 +305,8 @@ utility_meter:
 template:
   # Daily DHW COP from the utility-meter deltas. Invalid until today's
   # electrical consumption reaches 1 kWh (avoids 0/0 early in the morning).
+  # The availability check avoids has_value() so the block also works on
+  # pre-2024.3 Home Assistant.
   - sensor:
       - name: "WPMS3 COP Warmwasser Heute"
         icon: "mdi:chart-line"
@@ -298,5 +315,5 @@ template:
           {% set e = states('sensor.wpms3_stromverbrauch_warmwasser_heute') | float(0) %}
           {{ (w / e) | round(2) if e >= 1.0 else 'unavailable' }}
         availability: >-
-          {{ has_value('sensor.wpms3_waermeertrag_warmwasser_heute')
-             and has_value('sensor.wpms3_stromverbrauch_warmwasser_heute') }}
+          {{ states('sensor.wpms3_waermeertrag_warmwasser_heute') not in ['unknown', 'unavailable']
+             and states('sensor.wpms3_stromverbrauch_warmwasser_heute') not in ['unknown', 'unavailable'] }}
