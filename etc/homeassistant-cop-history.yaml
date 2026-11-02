@@ -1,9 +1,12 @@
 # Daily COP history helpers for elster2mqtt (WPM 3 / WPL 15 AS)
 # Merge as top-level blocks into configuration.yaml (NOT under mqtt:).
 #
-# Snapshots are taken on the WPM's own daily counter rollover (nonzero -> 0),
-# so no time trigger is needed: timezone differences and clock drift between
-# HA and the controller are irrelevant. Days where the COP never became valid
+# Heating snapshots are taken on the WPM's own daily counter rollover
+# (nonzero -> 0). DHW snapshots are taken on the Home Assistant
+# utility_meter daily reset (the controller's DHW daily registers are dead
+# on firmware 390-08; see etc/homeassistant.yaml), using the meters'
+# last_period attributes. Timezone differences and clock drift are
+# irrelevant in both cases. Days where the COP never became valid
 # produce no sample, so averages cover valid days only.
 
 template:
@@ -19,13 +22,22 @@ template:
         state: "{{ this.state if this.state | is_number else 'unknown' }}"
         state_class: measurement
 
+  # Daily DHW counters on the controller are dead on firmware 390-08
+  # (500.092a/092b, 500.091a/091b read 0 between charge cycles), so the DHW
+  # COP is computed in Home Assistant from the utility_meter daily deltas.
+  # Fires on the daily electricity meter reset (around midnight); at that
+  # instant the meter's last_period attribute holds the previous day's
+  # converged values.
   - trigger:
       - platform: state
-        entity_id: sensor.wpms3_waermeertrag_ww_tag_kwh
-        to: "0"
+        entity_id: sensor.wpms3_stromverbrauch_warmwasser_heute
     sensor:
       - name: "WPMS3 COP Warmwasser Tageswert"
-        state: "{{ this.state if this.state | is_number else 'unknown' }}"
+        state: >
+          {% set w = state_attr(trigger.from_state.entity_id, 'last_period') | float(0) %}
+          {% set e = state_attr(trigger.to_state.entity_id, 'last_period') | float(0) %}
+          {{ (w / e) | round(2) if e >= 1.0 and w >= 1.0
+             else (this.state if this.state | is_number else 'unknown') }}
         state_class: measurement
 
 sensor:

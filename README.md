@@ -178,14 +178,10 @@ data:
     index: 500.091e
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
     index: 500.091f
-  - name: WAERMEERTRAG_WW_TAG_WH
-    index: 500.092a
-  - name: WAERMEERTRAG_WW_TAG_KWH
-    index: 500.092b
-  - name: EL_AUFNAHMELEISTUNG_WW_TAG_WH
-    index: 500.091a
-  - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
-    index: 500.091b
+  # NOTE: the DHW daily registers 500.092a/092b and 500.091a/091b are dead
+  # on firmware 390-08 (values only carry meaning during an active DHW
+  # charge cycle). Daily DHW energy is derived in Home Assistant from the
+  # SUM register deltas below (see the Home Assistant Integration section).
   - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
     index: 500.0927
   - name: WAERMEERTRAG_HEIZ_SUM_MWH
@@ -268,10 +264,15 @@ cop_daily_heating = waermeertrag_heiz_tag_kwh / el_aufnahmeleistung_heiz_tag_kwh
 ```
 
 #### B. Daily Domestic Hot Water COP (cop_daily_ww)
+The controller's DHW daily registers (`500.092a`/`500.092b`, `500.091a`/`500.091b`) are **dead on firmware 390-08**: the Wh word only carries a value while a DHW charge cycle is actually running (verified on the bus: `500.092a = 85` mid-charge, `0` whenever polled between cycles) and the kWh word is never populated. The all-time SUM registers are reliable, so the daily DHW energy — and with it `cop_daily_ww` — is derived in Home Assistant from the daily deltas of the cumulative totals:
+
 ```
-cop_daily_ww = waermeertrag_ww_tag_kwh / el_aufnahmeleistung_ww_tag_kwh
+# in Home Assistant (utility_meter over the total_increasing counters):
+cop_daily_ww = sensor.wpms3_waermeertrag_warmwasser_heute
+             / sensor.wpms3_stromverbrauch_warmwasser_heute
 ```
-*(Note: Daily COP fields are populated once today's electrical consumption reaches at least 1 kWh to guard against division by zero early in the morning).*
+
+The bridge itself stays stateless; no state file is needed. *(Note: like all daily COP fields, the value becomes valid once today's electrical consumption reaches at least 1 kWh to guard against division by zero early in the morning. The SUM registers hold whole kWh, so daily DHW deltas — and thus the DHW COP — are quantized to whole kWh.)*
 
 #### C. All-Time Seasonal Performance Factor (JAZ / SCOP)
 Stiebel-Eltron controllers store cumulative lifetime energy across two registers: MWh (megawatt-hours) and remaining kWh (0–999). `elster2mqtt` combines them into monotonic total kWh values:
@@ -420,10 +421,23 @@ mqtt:
       value_template: "{{ value_json.cop_daily_heating | default('unavailable') }}"
       icon: "mdi:chart-line"
 
-    - name: "Heat Pump Daily DHW COP"
+    # Daily DHW energy is not available from the controller's registers on
+    # firmware 390-08. The all-time totals are collected as total_increasing
+    # counters and split into daily values plus a daily DHW COP using the
+    # utility_meter and template blocks at the end of etc/homeassistant.yaml.
+    - name: "Heat Pump Total DHW Heat Output"
       state_topic: "wpms3/info"
-      value_template: "{{ value_json.cop_daily_ww | default('unavailable') }}"
-      icon: "mdi:chart-line"
+      value_template: "{{ value_json.waermeertrag_ww_total_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+
+    - name: "Heat Pump Total DHW Electrical Intake"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.el_aufnahmeleistung_ww_total_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
 
   binary_sensor:
     - name: "Heat Pump Compressor Active"
@@ -450,7 +464,7 @@ mqtt:
 
 ### Daily COP History & Rolling Averages
 
-`cop_daily_heating` and `cop_daily_ww` evolve throughout the day and reset at midnight. To track seasonal performance trends without clock or timezone fragility, `etc/homeassistant-cop-history.yaml` provides event-driven trigger-based template sensors that detect when the controller rolls over its daily counters (resetting to 0) to capture the previous day's final converged COP and compute a 7-day rolling average.
+`cop_daily_heating` evolves throughout the day and resets at midnight. Daily DHW values and `cop_daily_ww` are tracked by the `utility_meter` sensors in `etc/homeassistant.yaml` (daily reset around midnight). To track seasonal performance trends without clock or timezone fragility, `etc/homeassistant-cop-history.yaml` provides event-driven trigger-based template sensors that capture the previous day's final converged COP — the heating variant on the controller's daily counter rollover (reset to 0), the DHW variant on the utility meters' daily reset (reading their `last_period` attributes) — and compute a 7-day rolling average.
 
 To install:
 1. Merge the `template:` and `sensor:` blocks from `etc/homeassistant-cop-history.yaml` into your `configuration.yaml` as top-level sections (not under `mqtt:`).

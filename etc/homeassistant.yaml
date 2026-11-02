@@ -1,5 +1,7 @@
 # Home Assistant MQTT configuration for elster2mqtt (WPM 3 / WPL 15 AS)
-# Add or merge this block in your Home Assistant configuration.yaml under `mqtt:`
+# Add or merge this block in your Home Assistant configuration.yaml under `mqtt:`.
+# The utility_meter: and template: blocks at the end of this file must be
+# merged as TOP-LEVEL sections (NOT under mqtt:).
 
 mqtt:
   sensor:
@@ -187,22 +189,26 @@ mqtt:
       value_template: "{{ value_json.cop_daily_heating | default('unavailable') }}"
       icon: "mdi:chart-line"
 
-    - name: "WPMS3 Waermeertrag Warmwasser Tag"
+    # Daily DHW energy is NOT available from the controller (the register
+    # pairs 500.092a/092b and 500.091a/091b are dead on firmware 390-08).
+    # Instead, the all-time DHW totals below are tracked as total_increasing
+    # counters and accumulated into daily values and a daily COP by the
+    # utility_meter and template blocks at the end of this file. The
+    # all-time heating counters live in the "All-Time Totals" section below.
+
+    - name: "WPMS3 Total Waermeertrag Warmwasser"
       state_topic: "wpms3/info"
-      value_template: "{{ value_json.waermeertrag_ww_tag_kwh }}"
+      value_template: "{{ value_json.waermeertrag_ww_total_kwh }}"
       unit_of_measurement: "kWh"
       device_class: energy
+      state_class: total_increasing
 
-    - name: "WPMS3 Stromverbrauch Warmwasser Tag"
+    - name: "WPMS3 Total Stromverbrauch Warmwasser"
       state_topic: "wpms3/info"
-      value_template: "{{ value_json.el_aufnahmeleistung_ww_tag_kwh }}"
+      value_template: "{{ value_json.el_aufnahmeleistung_ww_total_kwh }}"
       unit_of_measurement: "kWh"
       device_class: energy
-
-    - name: "WPMS3 COP Warmwasser Tag"
-      state_topic: "wpms3/info"
-      value_template: "{{ value_json.cop_daily_ww | default('unavailable') }}"
-      icon: "mdi:chart-line"
+      state_class: total_increasing
 
     # --- Home Assistant Energy Dashboard Entities (All-Time Totals) ---
     - name: "WPMS3 Total Stromverbrauch"
@@ -256,3 +262,41 @@ mqtt:
       payload_on: "on"
       payload_off: "off"
       device_class: heat
+
+# ---
+# Daily DHW energy and COP (WPM 3 firmware 390-08 workaround)
+#
+# The controller's DHW daily registers (500.092a/092b, 500.091a/091b) are
+# dead: the Wh word only holds values during an active DHW charge cycle and
+# the kWh word is never populated. The all-time SUM registers are reliable,
+# so daily DHW energy is accumulated here from their deltas. total_increasing
+# on the source sensors already discards any counter reset (SUM decrement).
+#
+# Same merge instruction as above: add the utility_meter: and template: blocks
+# as TOP-LEVEL sections (not under mqtt:), then reload via
+# Developer Tools -> YAML (or restart Home Assistant).
+
+utility_meter:
+  wpms3_waermeertrag_warmwasser_heute:
+    name: "WPMS3 Waermeertrag Warmwasser Heute"
+    source: sensor.wpms3_total_waermeertrag_warmwasser
+    cycle: daily
+
+  wpms3_stromverbrauch_warmwasser_heute:
+    name: "WPMS3 Stromverbrauch Warmwasser Heute"
+    source: sensor.wpms3_total_stromverbrauch_warmwasser
+    cycle: daily
+
+template:
+  # Daily DHW COP from the utility-meter deltas. Invalid until today's
+  # electrical consumption reaches 1 kWh (avoids 0/0 early in the morning).
+  - sensor:
+      - name: "WPMS3 COP Warmwasser Heute"
+        icon: "mdi:chart-line"
+        state: >
+          {% set w = states('sensor.wpms3_waermeertrag_warmwasser_heute') | float(0) %}
+          {% set e = states('sensor.wpms3_stromverbrauch_warmwasser_heute') | float(0) %}
+          {{ (w / e) | round(2) if e >= 1.0 else 'unavailable' }}
+        availability: >-
+          {{ has_value('sensor.wpms3_waermeertrag_warmwasser_heute')
+             and has_value('sensor.wpms3_stromverbrauch_warmwasser_heute') }}

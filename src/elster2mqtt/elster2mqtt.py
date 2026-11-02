@@ -348,9 +348,7 @@ def synthesize_metrics(info):
         ("waermeertrag_ww_total_kwh", "waermeertrag_ww_sum_mwh", "waermeertrag_ww_sum_kwh", 1, 1),
         ("el_aufnahmeleistung_ww_total_kwh", "el_aufnahmeleistung_ww_sum_mwh", "el_aufnahmeleistung_ww_sum_kwh", 1, 1),
         ("waermeertrag_heiz_tag_kwh", "waermeertrag_heiz_tag_kwh", "waermeertrag_heiz_tag_wh", 1000, 3),
-        ("waermeertrag_ww_tag_kwh", "waermeertrag_ww_tag_kwh", "waermeertrag_ww_tag_wh", 1000, 3),
         ("el_aufnahmeleistung_heiz_tag_kwh", "el_aufnahmeleistung_heiz_tag_kwh", "el_aufnahmeleistung_heiz_tag_wh", 1000, 3),
-        ("el_aufnahmeleistung_ww_tag_kwh", "el_aufnahmeleistung_ww_tag_kwh", "el_aufnahmeleistung_ww_tag_wh", 1000, 3),
     ):
         if high_key not in info:
             continue
@@ -385,14 +383,6 @@ def synthesize_metrics(info):
         heat_tag_hzg = float(info.get("waermeertrag_heiz_tag_kwh") or 0)
         if el_tag_hzg > 0:
             info["cop_daily_heating"] = round(heat_tag_hzg / el_tag_hzg, 2)
-    except (ValueError, TypeError):
-        pass
-
-    try:
-        el_tag_ww = float(info.get("el_aufnahmeleistung_ww_tag_kwh") or 0)
-        heat_tag_ww = float(info.get("waermeertrag_ww_tag_kwh") or 0)
-        if el_tag_ww > 0:
-            info["cop_daily_ww"] = round(heat_tag_ww / el_tag_ww, 2)
     except (ValueError, TypeError):
         pass
 

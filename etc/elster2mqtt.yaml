@@ -108,14 +108,10 @@ data:
     index: 500.091e
   - name: EL_AUFNAHMELEISTUNG_HEIZ_TAG_KWH
     index: 500.091f
-  - name: WAERMEERTRAG_WW_TAG_WH
-    index: 500.092a
-  - name: WAERMEERTRAG_WW_TAG_KWH
-    index: 500.092b
-  - name: EL_AUFNAHMELEISTUNG_WW_TAG_WH
-    index: 500.091a
-  - name: EL_AUFNAHMELEISTUNG_WW_TAG_KWH
-    index: 500.091b
+  # NOTE: the DHW daily registers 500.092a/092b and 500.091a/091b are dead
+  # on firmware 390-08 (values only valid during an active DHW charge cycle,
+  # kWh word never populated). Daily DHW energy is derived in Home Assistant
+  # from the SUM register deltas below (see etc/homeassistant.yaml).
   - name: WAERMEERTRAG_2WE_HEIZ_TAG_KWH
     index: 500.0927
   - name: WAERMEERTRAG_HEIZ_SUM_MWH

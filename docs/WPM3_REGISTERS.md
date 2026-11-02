@@ -194,11 +194,33 @@ Empirical proof: immediately after a DHW cycle started,
 `500.092A = 85`, `500.092B = 0` → 0.085 kWh charged so far; the display
 shows the same value with three decimals (e.g. `3.866 kWh`).
 
+**Firmware 390-08 caveat — the DHW daily pairs are NOT usable as daily
+counters.** Follow-up captures across a full day (morning 10:40–11:03
+and evening 20:41–22:xx, sampled again every 5 minutes in the service
+logs) show:
+
+- `500.092B` and `500.091A`/`500.091B` answer `0` on every poll,
+  whenever polled, before, during and after DHW charges.
+- `500.092A` only carries a value during an *active* DHW charge
+  (0x0055 = 85 mid-cycle in the evening capture) and reads `0` between
+  cycles — it tracks the running cycle, not the day.
+- The heating daily pair works as documented above (`092E = 125` /
+  `092F = 41` → 41.125 kWh in the evening capture), so the dead
+  behaviour is specific to the DHW pairs.
+- The earlier "display shows the same value with three decimals" note
+  was wrong for this pairing: while `092A = 85`, the display showed
+  `3.866 kWh` — the display's daily DHW figure does not come from
+  these registers on this firmware.
+
+Daily DHW energy can only be derived from the SUM pair deltas; see
+`etc/homeassistant.yaml` (utility_meter over the total_increasing
+all-time counters).
+
 | Display item (INFO → WÄRMEPUMPE) | Wh reg | kWh reg | MWh reg |
 |---|---|---|---|
 | WÄRMEMENGE VD HEIZEN TAG | `500.092E` | `500.092F` | — |
 | WÄRMEMENGE VD HEIZEN SUMME | — | `500.0930` | `500.0931` |
-| WÄRMEMENGE VD WW TAG | `500.092A` | `500.092B` | — |
+| WÄRMEMENGE VD WW TAG | `500.092A` | `500.092B` | — | dead on 390-08 (see caveat above) |
 | WÄRMEMENGE VD WW SUMME | — | `500.092C` | `500.092D` |
 | WÄRMEMENGE NHZ HEIZEN TAG | `500.0926` | `500.0927` | — |
 | WÄRMEMENGE NHZ HEIZEN SUMME | — | `500.0928` | `500.0929` |
@@ -330,6 +352,7 @@ configuration. Listed so nobody re-probes them blindly:
 
 | Register | Community name | Observed |
 |---|---|---|
+| `500.092A`–`092B` / `500.091A`–`091B` | VD WW daily energy tags | `092A` only nonzero during an active DHW charge (resets to 0 right after; full-day captures), the other three always `0` — daily DHW energy only via SUM deltas |
 | `500.063E` / `500.063C` | `IST/SOLLDREHZAHL_VERDICHTER_1` (old mapping) | 0 — the live speed pair is `063B`/`063D` |
 | `180.063E` | ISTDREHZAHL on system node | `0x8000` sentinel |
 | `500.0014` | `VERDAMPFERTEMP` (old mapping) | `0x8000` — live evaporator temp is `07A9` |
@@ -371,6 +394,9 @@ Corrections established by the experiments above:
   this firmware.
 - Flow, inverter voltage/current live at `02E2`/`06B1`/`06B2`, not at
   `01DA`/`090A`.
+- The DHW daily energy pairs (`092A`/`092B`, `091A`/`091B`) do not
+  function as daily counters on this firmware; only their SUM pairs
+  (`092C`/`092D`, `091C`/`091D`) carry usable numbers (see section 5).
 - `4E5E`/`4E7E` relay command bitmaps are not in any public table.
 - `0917` is the heating control integral — it explains "standby despite
   demand" periods (start permission is granted by the integral, not by
