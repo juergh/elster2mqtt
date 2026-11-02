@@ -464,10 +464,10 @@ mqtt:
 
 ### Daily COP History & Rolling Averages
 
-`cop_daily_heating` evolves throughout the day and resets at midnight. Daily DHW values and `cop_daily_ww` are tracked by the `utility_meter` sensors in `ha/homeassistant.yaml` (daily reset around midnight). To track seasonal performance trends without clock or timezone fragility, `ha/homeassistant-cop-history.yaml` provides event-driven trigger-based template sensors that capture the previous day's final converged COP — the heating variant on the controller's daily counter rollover (reset to 0), the DHW variant on the utility meters' daily reset (reading their `last_period` attributes) — and compute a 7-day rolling average.
+`cop_daily_heating` evolves throughout the day and resets at midnight. Daily DHW values and `cop_daily_ww` are tracked by the `utility_meter` sensors in `ha/homeassistant.yaml` (daily reset around midnight). For seasonal performance trends without clock or timezone fragility, `ha/homeassistant.yaml` also provides event-driven trigger-based template sensors that capture the previous day's final converged COP — the heating variant on the controller's daily counter rollover (reset to 0), the DHW variant on the utility meters' daily reset (reading their `last_period` attributes) — and a 7-day rolling average over them.
 
 To install:
-1. Merge the `template:` and `sensor:` blocks from `ha/homeassistant-cop-history.yaml` into your `configuration.yaml` as top-level sections (not under `mqtt:`).
+1. Merge the `utility_meter:`, `template:` and `sensor:` blocks from `ha/homeassistant.yaml` into your `configuration.yaml` as top-level sections (not under `mqtt:`).
 2. Go to **Developer Tools** -> **YAML** -> reload **Template entities**.
 3. Restart Home Assistant to initialize the `statistics` sensors.
 4. *(Optional)* To change the averaging window from 7 to 30 days, change `days: 7` to `days: 30` in the two statistics sensor blocks.

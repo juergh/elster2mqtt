@@ -1,7 +1,7 @@
 # Home Assistant MQTT configuration for elster2mqtt (WPM 3 / WPL 15 AS)
 # Add or merge this block in your Home Assistant configuration.yaml under `mqtt:`.
-# The utility_meter: and template: blocks at the end of this file must be
-# merged as TOP-LEVEL sections (NOT under mqtt:).
+# The utility_meter:, template: and sensor: blocks at the end of this file
+# must be merged as TOP-LEVEL sections (NOT under mqtt:).
 
 mqtt:
   sensor:
@@ -317,3 +317,72 @@ template:
         availability: >-
           {{ states('sensor.wpms3_waermeertrag_warmwasser_heute') not in ['unknown', 'unavailable']
              and states('sensor.wpms3_stromverbrauch_warmwasser_heute') not in ['unknown', 'unavailable'] }}
+
+  # ---
+  # Daily COP history for the "COP Tageswerte (7 Tage)" dashboard graph.
+  # Snapshots of each day's final converged COP are stored in trigger-based
+  # sensors so a 7-day rolling average (see the sensor: block below) can be
+  # computed without clock or timezone fragility. Days where the COP never
+  # became valid produce no sample, so averages cover valid days only.
+  #
+  # Heating snapshots are taken on the WPM's own daily counter rollover
+  # (nonzero -> 0): at that moment cop_daily_heating has just gone invalid
+  # for the new day, so this.state still holds the previous day's converged
+  # COP. Note: the triggering entity is the MQTT sensor "WPMS3 Waermeertrag
+  # Heizen Tag" — its entity id is sensor.wpms3_waermeertrag_heizen_tag, NOT
+  # the raw JSON key.
+  #
+  # DHW snapshots are taken on the Home Assistant utility_meter daily reset
+  # (the controller's DHW daily registers are dead on firmware 390-08),
+  # using the meters' last_period attributes. Timezone differences and
+  # clock drift are irrelevant in both cases. The trigger fires on every
+  # meter update (~every 5 min), but a new snapshot is only produced
+  # exactly at the daily reset, when the meter itself is back at 0 and
+  # last_period holds the previous day's converged values.
+  #
+  # IMPORTANT: a sensor with state_class: measurement must only ever hold
+  # numeric states, so the fallback renders NOTHING (state unchanged)
+  # instead of assigning the string 'unknown' — assigning it makes the
+  # sensor platform raise ValueError and take down the core.
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_waermeertrag_heizen_tag
+        to: "0"
+    sensor:
+      - name: "WPMS3 COP Heizen Tageswert"
+        state: "{{ this.state if this.state | is_number }}"
+        state_class: measurement
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_stromverbrauch_warmwasser_heute
+    sensor:
+      - name: "WPMS3 COP Warmwasser Tageswert"
+        state: >
+          {% set fresh = states('sensor.wpms3_stromverbrauch_warmwasser_heute') | float(0) < 0.001 %}
+          {% set w = state_attr('sensor.wpms3_waermeertrag_warmwasser_heute', 'last_period') | float(0) %}
+          {% set e = state_attr('sensor.wpms3_stromverbrauch_warmwasser_heute', 'last_period') | float(0) %}
+          {% set snapshot = (w / e) | round(2) if e >= 1.0 and w >= 1.0
+             else (this.state if this.state | is_number) %}
+          {{ snapshot if fresh else this.state }}
+        state_class: measurement
+
+# ---
+# 7-day rolling averages over the daily COP snapshots computed above.
+# `entity_id:` (rather than `source:`) is the correct key for the legacy
+# statistics sensor platform and still accepted as of Home Assistant
+# 2026.10.4.
+sensor:
+  - platform: statistics
+    name: "WPMS3 COP Heizen 7 Tage Mittel"
+    entity_id: sensor.wpms3_cop_heizen_tageswert
+    state_characteristic: mean
+    max_age:
+      days: 7
+
+  - platform: statistics
+    name: "WPMS3 COP Warmwasser 7 Tage Mittel"
+    entity_id: sensor.wpms3_cop_warmwasser_tageswert
+    state_characteristic: mean
+    max_age:
+      days: 7
