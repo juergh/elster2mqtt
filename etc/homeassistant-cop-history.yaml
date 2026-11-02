@@ -12,10 +12,12 @@
 template:
   # Fires when the WPM rolls over its daily heating counter. At that moment
   # cop_daily_heating has just gone invalid for the new day, so this.state
-  # still holds the previous day's converged COP.
+  # still holds the previous day's converged COP. Note: the triggering
+  # entity is the MQTT sensor "WPMS3 Waermeertrag Heizen Tag" — its entity
+  # id is sensor.wpms3_waermeertrag_heizen_tag, NOT the raw JSON key.
   - trigger:
       - platform: state
-        entity_id: sensor.wpms3_waermeertrag_heiz_tag_kwh
+        entity_id: sensor.wpms3_waermeertrag_heizen_tag
         to: "0"
     sensor:
       - name: "WPMS3 COP Heizen Tageswert"
@@ -25,19 +27,22 @@ template:
   # Daily DHW counters on the controller are dead on firmware 390-08
   # (500.092a/092b, 500.091a/091b read 0 between charge cycles), so the DHW
   # COP is computed in Home Assistant from the utility_meter daily deltas.
-  # Fires on the daily electricity meter reset (around midnight); at that
-  # instant the meter's last_period attribute holds the previous day's
-  # converged values.
+  # The trigger fires on every meter update (~every 5 min), but a new
+  # snapshot is only produced exactly at the daily reset, when the meter
+  # itself is back at 0 and last_period holds the previous day's converged
+  # values. The rest of the day keeps the previous state unchanged.
   - trigger:
       - platform: state
         entity_id: sensor.wpms3_stromverbrauch_warmwasser_heute
     sensor:
       - name: "WPMS3 COP Warmwasser Tageswert"
         state: >
-          {% set w = state_attr(trigger.from_state.entity_id, 'last_period') | float(0) %}
-          {% set e = state_attr(trigger.to_state.entity_id, 'last_period') | float(0) %}
-          {{ (w / e) | round(2) if e >= 1.0 and w >= 1.0
-             else (this.state if this.state | is_number else 'unknown') }}
+          {% set fresh = states('sensor.wpms3_stromverbrauch_warmwasser_heute') | float(0) < 0.001 %}
+          {% set w = state_attr('sensor.wpms3_waermeertrag_warmwasser_heute', 'last_period') | float(0) %}
+          {% set e = state_attr('sensor.wpms3_stromverbrauch_warmwasser_heute', 'last_period') | float(0) %}
+          {% set snapshot = (w / e) | round(2) if e >= 1.0 and w >= 1.0
+             else (this.state if this.state | is_number else 'unknown') %}
+          {{ snapshot if fresh else this.state }}
         state_class: measurement
 
 sensor:
