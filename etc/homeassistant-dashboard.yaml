@@ -61,9 +61,9 @@ views:
             hours_to_show: 24
             entities:
               - entity: sensor.wpms3_betriebszustand
-                name: Zustand
+                name: Betriebszustand
               - entity: binary_sensor.wpms3_verdichter_aktiv
-                name: Verdichter
+                name: Verdichter Aktiv
 
       # ==========================================
       # Column 2: Efficiency & COP
