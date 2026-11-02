@@ -424,7 +424,7 @@ mqtt:
     # Daily DHW energy is not available from the controller's registers on
     # firmware 390-08. The all-time totals are collected as total_increasing
     # counters and split into daily values plus a daily DHW COP using the
-    # utility_meter and template blocks at the end of etc/homeassistant.yaml.
+    # utility_meter and template blocks at the end of ha/homeassistant.yaml.
     - name: "Heat Pump Total DHW Heat Output"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.waermeertrag_ww_total_kwh }}"
@@ -464,21 +464,21 @@ mqtt:
 
 ### Daily COP History & Rolling Averages
 
-`cop_daily_heating` evolves throughout the day and resets at midnight. Daily DHW values and `cop_daily_ww` are tracked by the `utility_meter` sensors in `etc/homeassistant.yaml` (daily reset around midnight). To track seasonal performance trends without clock or timezone fragility, `etc/homeassistant-cop-history.yaml` provides event-driven trigger-based template sensors that capture the previous day's final converged COP — the heating variant on the controller's daily counter rollover (reset to 0), the DHW variant on the utility meters' daily reset (reading their `last_period` attributes) — and compute a 7-day rolling average.
+`cop_daily_heating` evolves throughout the day and resets at midnight. Daily DHW values and `cop_daily_ww` are tracked by the `utility_meter` sensors in `ha/homeassistant.yaml` (daily reset around midnight). To track seasonal performance trends without clock or timezone fragility, `ha/homeassistant-cop-history.yaml` provides event-driven trigger-based template sensors that capture the previous day's final converged COP — the heating variant on the controller's daily counter rollover (reset to 0), the DHW variant on the utility meters' daily reset (reading their `last_period` attributes) — and compute a 7-day rolling average.
 
 To install:
-1. Merge the `template:` and `sensor:` blocks from `etc/homeassistant-cop-history.yaml` into your `configuration.yaml` as top-level sections (not under `mqtt:`).
+1. Merge the `template:` and `sensor:` blocks from `ha/homeassistant-cop-history.yaml` into your `configuration.yaml` as top-level sections (not under `mqtt:`).
 2. Go to **Developer Tools** -> **YAML** -> reload **Template entities**.
 3. Restart Home Assistant to initialize the `statistics` sensors.
 4. *(Optional)* To change the averaging window from 7 to 30 days, change `days: 7` to `days: 30` in the two statistics sensor blocks.
 
 ### Dashboard Setup
 
-A ready-to-use Lovelace dashboard configuration is provided in `etc/homeassistant-dashboard.yaml`. To import it:
+A ready-to-use Lovelace dashboard configuration is provided in `ha/homeassistant-dashboard.yaml`. To import it:
 1. In Home Assistant, go to **Settings** -> **Dashboards** -> **Add Dashboard** -> select **New dashboard from scratch**.
 2. Open the new dashboard, click the three dots (`...`) top-right -> **Edit Dashboard**.
 3. Click the three dots (`...`) again -> **Raw configuration editor**.
-4. Paste the content of `etc/homeassistant-dashboard.yaml` and click **Save**.
+4. Paste the content of `ha/homeassistant-dashboard.yaml` and click **Save**.
 
 ---
 

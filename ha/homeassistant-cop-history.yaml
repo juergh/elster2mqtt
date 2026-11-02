@@ -4,7 +4,7 @@
 # Heating snapshots are taken on the WPM's own daily counter rollover
 # (nonzero -> 0). DHW snapshots are taken on the Home Assistant
 # utility_meter daily reset (the controller's DHW daily registers are dead
-# on firmware 390-08; see etc/homeassistant.yaml), using the meters'
+# on firmware 390-08; see ha/homeassistant.yaml), using the meters'
 # last_period attributes. Timezone differences and clock drift are
 # irrelevant in both cases. Days where the COP never became valid
 # produce no sample, so averages cover valid days only.
@@ -21,7 +21,7 @@ template:
         to: "0"
     sensor:
       - name: "WPMS3 COP Heizen Tageswert"
-        state: "{{ this.state if this.state | is_number else 'unknown' }}"
+        state: "{{ this.state if this.state | is_number }}"
         state_class: measurement
 
   # Daily DHW counters on the controller are dead on firmware 390-08
@@ -41,7 +41,7 @@ template:
           {% set w = state_attr('sensor.wpms3_waermeertrag_warmwasser_heute', 'last_period') | float(0) %}
           {% set e = state_attr('sensor.wpms3_stromverbrauch_warmwasser_heute', 'last_period') | float(0) %}
           {% set snapshot = (w / e) | round(2) if e >= 1.0 and w >= 1.0
-             else (this.state if this.state | is_number else 'unknown') %}
+             else (this.state if this.state | is_number) %}
           {{ snapshot if fresh else this.state }}
         state_class: measurement
 

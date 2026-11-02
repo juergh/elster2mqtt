@@ -213,7 +213,7 @@ logs) show:
   these registers on this firmware.
 
 Daily DHW energy can only be derived from the SUM pair deltas; see
-`etc/homeassistant.yaml` (utility_meter over the total_increasing
+`ha/homeassistant.yaml` (utility_meter over the total_increasing
 all-time counters).
 
 | Display item (INFO → WÄRMEPUMPE) | Wh reg | kWh reg | MWh reg |
