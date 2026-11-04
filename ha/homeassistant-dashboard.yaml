@@ -98,14 +98,14 @@ views:
             entities:
               - entity: sensor.wpms3_waermeertrag_heizen_tag
                 name: Wärmeertrag Heizen
-              - entity: sensor.wpms3_stromverbrauch_heizen_tag
-                name: Stromverbrauch Heizen
+              - entity: sensor.wpms3_aufnahmeleistung_heizen_tag
+                name: Aufnahmeleistung Heizen
               - entity: sensor.wpms3_cop_heizen_tag
                 name: COP Heizen
               - entity: sensor.wpms3_waermeertrag_warmwasser_heute
                 name: Wärmeertrag Warmwasser
-              - entity: sensor.wpms3_stromverbrauch_warmwasser_heute
-                name: Stromverbrauch Warmwasser
+              - entity: sensor.wpms3_aufnahmeleistung_warmwasser_heute
+                name: Aufnahmeleistung Warmwasser
               - entity: sensor.wpms3_cop_warmwasser_heute
                 name: COP Warmwasser
 

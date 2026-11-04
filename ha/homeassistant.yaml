@@ -178,7 +178,7 @@ mqtt:
       unit_of_measurement: "kWh"
       device_class: energy
 
-    - name: "WPMS3 Stromverbrauch Heizen Tag"
+    - name: "WPMS3 Aufnahmeleistung Heizen Tag"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.el_aufnahmeleistung_heiz_tag_kwh }}"
       unit_of_measurement: "kWh"
@@ -203,7 +203,7 @@ mqtt:
       device_class: energy
       state_class: total_increasing
 
-    - name: "WPMS3 Total Stromverbrauch Warmwasser"
+    - name: "WPMS3 Total Aufnahmeleistung Warmwasser"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.el_aufnahmeleistung_ww_total_kwh }}"
       unit_of_measurement: "kWh"
@@ -211,7 +211,7 @@ mqtt:
       state_class: total_increasing
 
     # --- Home Assistant Energy Dashboard Entities (All-Time Totals) ---
-    - name: "WPMS3 Total Stromverbrauch"
+    - name: "WPMS3 Total Aufnahmeleistung"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.el_aufnahmeleistung_total_kwh }}"
       unit_of_measurement: "kWh"
@@ -297,9 +297,9 @@ utility_meter:
     source: sensor.wpms3_total_waermeertrag_warmwasser
     cycle: daily
 
-  wpms3_stromverbrauch_warmwasser_heute:
-    name: "WPMS3 Stromverbrauch Warmwasser Heute"
-    source: sensor.wpms3_total_stromverbrauch_warmwasser
+  wpms3_aufnahmeleistung_warmwasser_heute:
+    name: "WPMS3 Aufnahmeleistung Warmwasser Heute"
+    source: sensor.wpms3_total_aufnahmeleistung_warmwasser
     cycle: daily
 
 template:
@@ -312,11 +312,11 @@ template:
         icon: "mdi:chart-line"
         state: >
           {% set w = states('sensor.wpms3_waermeertrag_warmwasser_heute') | float(0) %}
-          {% set e = states('sensor.wpms3_stromverbrauch_warmwasser_heute') | float(0) %}
+          {% set e = states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') | float(0) %}
           {{ (w / e) | round(2) if e >= 1.0 else 'unavailable' }}
         availability: >-
           {{ states('sensor.wpms3_waermeertrag_warmwasser_heute') not in ['unknown', 'unavailable']
-             and states('sensor.wpms3_stromverbrauch_warmwasser_heute') not in ['unknown', 'unavailable'] }}
+             and states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') not in ['unknown', 'unavailable'] }}
 
   # ---
   # Daily COP history for the "COP Tageswerte (7 Tage)" dashboard graph.
@@ -355,13 +355,13 @@ template:
 
   - trigger:
       - platform: state
-        entity_id: sensor.wpms3_stromverbrauch_warmwasser_heute
+        entity_id: sensor.wpms3_aufnahmeleistung_warmwasser_heute
     sensor:
       - name: "WPMS3 COP Warmwasser Tageswert"
         state: >
-          {% set fresh = states('sensor.wpms3_stromverbrauch_warmwasser_heute') | float(0) < 0.001 %}
+          {% set fresh = states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') | float(0) < 0.001 %}
           {% set w = state_attr('sensor.wpms3_waermeertrag_warmwasser_heute', 'last_period') | float(0) %}
-          {% set e = state_attr('sensor.wpms3_stromverbrauch_warmwasser_heute', 'last_period') | float(0) %}
+          {% set e = state_attr('sensor.wpms3_aufnahmeleistung_warmwasser_heute', 'last_period') | float(0) %}
           {% set snapshot = (w / e) | round(2) if e >= 1.0 and w >= 1.0
              else (this.state if this.state | is_number) %}
           {{ snapshot if fresh else this.state }}

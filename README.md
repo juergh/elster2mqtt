@@ -269,7 +269,7 @@ The controller's DHW daily registers (`500.092a`/`500.092b`, `500.091a`/`500.091
 ```
 # in Home Assistant (utility_meter over the total_increasing counters):
 cop_daily_ww = sensor.wpms3_waermeertrag_warmwasser_heute
-             / sensor.wpms3_stromverbrauch_warmwasser_heute
+             / sensor.wpms3_aufnahmeleistung_warmwasser_heute
 ```
 
 The bridge itself stays stateless; no state file is needed. *(Note: like all daily COP fields, the value becomes valid once today's electrical consumption reaches at least 1 kWh to guard against division by zero early in the morning. The SUM registers hold whole kWh, so daily DHW deltas — and thus the DHW COP — are quantized to whole kWh.)*
