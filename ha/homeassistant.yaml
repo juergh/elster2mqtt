@@ -325,34 +325,67 @@ template:
   # computed without clock or timezone fragility. Days where the COP never
   # became valid produce no sample, so averages cover valid days only.
   #
-  # Heating snapshots are taken on the WPM's own daily counter rollover
-  # (nonzero -> 0): at that moment cop_daily_heating has just gone invalid
-  # for the new day, so this.state still holds the previous day's converged
-  # COP. Note: the triggering entity is the MQTT sensor "WPMS3 Waermeertrag
-  # Heizen Tag" — its entity id is sensor.wpms3_waermeertrag_heizen_tag, NOT
-  # the raw JSON key.
-  #
-  # DHW snapshots are taken on the Home Assistant utility_meter daily reset
+  # Both daily COP sources are unavailable for part of the morning (the
+  # el < 1 kWh guard), so the snapshots below read from "Merker" holders
+  # that always carry the LAST NUMERIC COP of their source. At every
+  # snapshot moment the holders are guaranteed to hold the previous day's
+  # converged value: today's COP only becomes numeric again after the
+  # counters have reset AND at least 1 kWh has accumulated, which is
+  # always later than the snapshot.
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_cop_heizen_tag
+    sensor:
+      - name: "WPMS3 COP Heizen Merker"
+        state: "{{ trigger.to_state.state if trigger.to_state.state | is_number else this.state if this.state | is_number }}"
+        state_class: measurement
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_cop_warmwasser_heute
+    sensor:
+      - name: "WPMS3 COP Warmwasser Merker"
+        state: "{{ trigger.to_state.state if trigger.to_state.state | is_number else this.state if this.state | is_number }}"
+        state_class: measurement
+
+  # Heating snapshot: fires once per day on the WPM's own daily counter
+  # rollover, detected as a NUMERIC nonzero -> ~0 transition (an exact
+  # `to: "0"` string match never fires, because the JSON value renders as
+  # "0.0"). Note: the triggering entity is the MQTT sensor "WPMS3
+  # Waermeertrag Heizen Tag" — its entity id is
+  # sensor.wpms3_waermeertrag_heizen_tag, NOT the raw JSON key.
+  - trigger:
+      - platform: state
+        entity_id: sensor.wpms3_waermeertrag_heizen_tag
+    sensor:
+      - name: "WPMS3 COP Heizen Tageswert"
+        state: >
+          {% set prev = (trigger.from_state.state | float(-1)) if trigger.from_state else -1 %}
+          {% set now = trigger.to_state.state | float(-1) %}
+          {% if prev > 0 and now < 0.001 %}
+            {% set m = states('sensor.wpms3_cop_heizen_merker') %}
+            {{ m if m | is_number else (this.state if this.state | is_number) }}
+          {% else %}
+            {{ this.state if this.state | is_number }}
+          {% endif %}
+        state_class: measurement
+
+  # DHW snapshot: taken on the Home Assistant utility_meter daily reset
   # (the controller's DHW daily registers are dead on firmware 390-08),
   # using the meters' last_period attributes. Timezone differences and
-  # clock drift are irrelevant in both cases. The trigger fires on every
-  # meter update (~every 5 min), but a new snapshot is only produced
-  # exactly at the daily reset, when the meter itself is back at 0 and
-  # last_period holds the previous day's converged values.
+  # clock drift are irrelevant. The trigger fires on every meter update
+  # (~every 5 min), but a new snapshot is only produced exactly at the
+  # daily reset, when the meter itself is back at 0 and last_period holds
+  # the previous day's converged values. While the meters bootstrap
+  # (last_period still 0 after a Home Assistant restart), the first
+  # snapshot falls back to the Merker holder — which at that instant holds
+  # the value the daily COP had right before the reset, i.e. yesterday's
+  # converged COP.
   #
   # IMPORTANT: a sensor with state_class: measurement must only ever hold
   # numeric states, so the fallback renders NOTHING (state unchanged)
   # instead of assigning the string 'unknown' — assigning it makes the
   # sensor platform raise ValueError and take down the core.
-  - trigger:
-      - platform: state
-        entity_id: sensor.wpms3_waermeertrag_heizen_tag
-        to: "0"
-    sensor:
-      - name: "WPMS3 COP Heizen Tageswert"
-        state: "{{ this.state if this.state | is_number }}"
-        state_class: measurement
-
   - trigger:
       - platform: state
         entity_id: sensor.wpms3_aufnahmeleistung_warmwasser_heute
@@ -362,9 +395,10 @@ template:
           {% set fresh = states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') | float(0) < 0.001 %}
           {% set w = state_attr('sensor.wpms3_waermeertrag_warmwasser_heute', 'last_period') | float(0) %}
           {% set e = state_attr('sensor.wpms3_aufnahmeleistung_warmwasser_heute', 'last_period') | float(0) %}
+          {% set m = states('sensor.wpms3_cop_warmwasser_merker') %}
           {% set snapshot = (w / e) | round(2) if e >= 1.0 and w >= 1.0
-             else (this.state if this.state | is_number) %}
-          {{ snapshot if fresh else this.state }}
+             else (m if m | is_number) %}
+          {{ snapshot if fresh else (this.state if this.state | is_number) }}
         state_class: measurement
 
 # ---
