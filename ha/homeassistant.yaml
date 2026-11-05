@@ -217,6 +217,12 @@ mqtt:
       state_class: total_increasing
       icon: "mdi:snowflake-melt"
 
+    - name: "WPMS3 Verdichter Starts"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.verdichter_starts }}"
+      state_class: total_increasing
+      icon: "mdi:counter"
+
     - name: "WPMS3 Laufzeit Verdichter Warmwasser"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.laufzeit_verdichter_ww }}"
@@ -354,6 +360,14 @@ utility_meter:
     source: sensor.wpms3_total_aufnahmeleistung_warmwasser
     cycle: daily
 
+  # Exact daily compressor starts from the heat pump's internal start
+  # counter (500.071c/071d, x1000 split) — not affected by the 5-minute
+  # bridge polling interval.
+  wpms3_verdichter_starts_heute:
+    name: "WPMS3 Verdichter Starts Heute"
+    source: sensor.wpms3_verdichter_starts
+    cycle: daily
+
 template:
   # Daily DHW COP from the utility-meter deltas. Invalid until today's
   # electrical consumption reaches 1 kWh (avoids 0/0 early in the morning).
@@ -454,9 +468,9 @@ template:
         state_class: measurement
 
   # ---
-  # Average compressor cycle length today (runtime / starts). Uses the
-  # history_stats sensors below; approximate due to the 5-minute polling
-  # interval, but trends reveal short-cycling.
+  # Average compressor cycle length today (runtime / starts). Starts
+  # come from the exact internal counter; runtime is history_stats-based
+  # and still subject to the 5-minute polling interval (±a few min/day).
   - sensor:
       - name: "WPMS3 Verdichter Mittlere Laufzeit"
         unit_of_measurement: "min"
@@ -486,23 +500,15 @@ sensor:
       days: 7
 
 # ---
-# Compressor cycling metrics from the verdichter_laeuft flag.
-# Caveat: the bridge polls every 5 minutes, so cycles shorter than one
-# interval can be missed and the start count is approximate; trends are
-# meaningful, absolute values are not.
+# Compressor runtime from the verdichter_laeuft flag (starts come from
+# the exact internal counter via the utility_meter above). Caveat: the
+# bridge polls every 5 minutes, so short on-periods can be missed and
+# the runtime is approximate (±a few min/day); trends are meaningful.
   - platform: history_stats
     name: "WPMS3 Verdichter Laufzeit Heute"
     entity_id: binary_sensor.wpms3_verdichter_aktiv
     state: "on"
     type: time
-    start: "{{ today_at('00:00') }}"
-    end: "{{ now() }}"
-
-  - platform: history_stats
-    name: "WPMS3 Verdichter Starts Heute"
-    entity_id: binary_sensor.wpms3_verdichter_aktiv
-    state: "on"
-    type: count
     start: "{{ today_at('00:00') }}"
     end: "{{ now() }}"
 

@@ -253,6 +253,16 @@ def test_synthesize_metrics_without_wh_registers():
     assert "cop_daily_ww" not in info
 
 
+def test_synthesize_metrics_verdichter_starts():
+    info = {
+        "pumpenstatus": 561,
+        "verdichter_starts_high": 12,
+        "verdichter_starts_low": 252,
+    }
+    synthesize_metrics(info)
+    assert info["verdichter_starts"] == 12252.0
+
+
 def test_elster_bus_timeout_config():
     config = {
         "can": {"interface": "dummy", "sender": "123", "timeout": 10},

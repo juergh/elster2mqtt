@@ -179,6 +179,8 @@ views:
                 name: Heizkurve HK 2 (Radiatoren)
               - entity: sensor.wpms3_starts_abtauung
                 name: Starts Abtauung Total
+              - entity: sensor.wpms3_verdichter_starts
+                name: Verdichter Starts Total
               - entity: sensor.wpms3_laufzeit_verdichter_warmwasser
                 name: Verdichterlaufzeit Warmwasser
 
@@ -225,15 +227,17 @@ views:
                 name: COP Live Tagesmittel (24h)
 
           - type: entities
-            title: Verdichterzyklen (näherungsw., 5-Min-Abtastung)
+            title: Verdichterzyklen
             show_header_toggle: false
             entities:
               - entity: sensor.wpms3_verdichter_starts_heute
                 name: Starts Heute
               - entity: sensor.wpms3_verdichter_laufzeit_heute
-                name: Laufzeit Heute
+                name: Laufzeit Heute (näherungsw., 5-Min-Abtastung)
               - entity: sensor.wpms3_verdichter_mittlere_laufzeit
                 name: Mittlere Zykluslänge
+              - entity: sensor.wpms3_verdichter_starts
+                name: Starts Total
 
       - type: vertical-stack
         cards:

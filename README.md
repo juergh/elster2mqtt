@@ -154,6 +154,10 @@ data:
     format: dec_val
   - name: STARTS_ABTAUUNG
     index: 500.0806
+  - name: VERDICHTER_STARTS_LOW
+    index: 500.071d
+  - name: VERDICHTER_STARTS_HIGH
+    index: 500.071c
   - name: LAUFZEIT_VERDICHTER_WW
     index: 500.0802
   - name: DRUCK_HOCHDRUCK
@@ -507,9 +511,9 @@ To install:
 `ha/homeassistant.yaml` additionally provides:
 
 - `sensor.wpms3_cop_live` and its 24-hour rolling mean — live efficiency while the compressor runs (see formula E above).
-- Compressor cycling metrics (`sensor.wpms3_verdichter_starts_heute`, `…_laufzeit_heute`, `…_mittlere_laufzeit`) derived from the `verdichter_laeuft` flag via `history_stats`.
+- Compressor cycling metrics: exact daily starts from the heat pump's internal start counter (`500.071c`/`071d`, combined as `verdichter_starts`), daily runtime via `history_stats`, and the average cycle length computed from both.
 
-**Caveat:** the bridge polls every 5 minutes, so cycles shorter than one interval can be missed and the start count is approximate. The metrics reveal short-cycling as a trend (aim for average cycle lengths well above 15 minutes), but are not exact counters. Merge and reload as described above; the dashboard's *Effizienz* view visualises them.
+**Caveat:** the bridge polls every 5 minutes, so the *runtime* is approximate (±a few minutes per day); the *start count* is exact because it comes from the device's own counter. The metrics reveal short-cycling as a trend (aim for average cycle lengths well above 15 minutes). Merge and reload as described above; the dashboard's *Effizienz* view visualises them.
 
 ### Dashboard Setup
 

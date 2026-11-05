@@ -349,6 +349,7 @@ def synthesize_metrics(info):
         ("el_aufnahmeleistung_ww_total_kwh", "el_aufnahmeleistung_ww_sum_mwh", "el_aufnahmeleistung_ww_sum_kwh", 1, 1),
         ("waermeertrag_heiz_tag_kwh", "waermeertrag_heiz_tag_kwh", "waermeertrag_heiz_tag_wh", 1000, 3),
         ("el_aufnahmeleistung_heiz_tag_kwh", "el_aufnahmeleistung_heiz_tag_kwh", "el_aufnahmeleistung_heiz_tag_wh", 1000, 3),
+        ("verdichter_starts", "verdichter_starts_high", "verdichter_starts_low", 1, 0),
     ):
         if high_key not in info:
             continue

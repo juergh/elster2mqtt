@@ -311,6 +311,7 @@ identified by the display-verified table above.)
 
 | Register | Meaning | Observed | Confidence |
 |---|---|---|---|
+| `500.071C` + `500.071D` | Compressor start counter (×1000 split: `071C` = thousands, `071D` = remainder) | 12 + 252 → 12252, verified against the displayed start count; polled by the display via the 514 mirror | verified |
 | `500.0802` | Compressor runtime DHW [h] | 781, increments | verified |
 | `500.07FC` | Compressor runtime heating [h] | saturated at 9999 | verified dead |
 | `500.0805` | NHZ 1/2 runtime [h] | 124 | observed (live!) |
@@ -421,6 +422,9 @@ Corrections established by the experiments above:
 - The display polls the WÄRMEPUMPE screen on node `0x514`, using the
   `A1 14 …` addressing form (byte 1 carries the low node bits; section
   1.1).
+- The compressor start counter is `500.071C`/`500.071D` with the same
+  ×1000 decimal split as the energy counters; `07A6` is not starts (it
+  increments far faster).
 - Per-circuit Komforttemperatur (heating-curve offset) is `0005` on the
   circuit node, writable via the `C0` command: captured a live write
   `C0 01 05 00 F2` (601, `0005` = 24.2) with readback 19.5 → 24.2;
