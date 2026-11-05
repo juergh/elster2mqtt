@@ -133,8 +133,8 @@ views:
                 name: WP Vorlauf Ist
               - entity: sensor.wpms3_ruecklaufisttemperatur
                 name: WP Rücklauf Ist
-              - entity: sensor.wpms3_spreizung
-                name: Spreizung (Vorlauf - Rücklauf)
+              - entity: sensor.wpms3_wp_spreizung
+                name: WP Spreizung (Vorlauf - Rücklauf)
               - entity: sensor.wpms3_pufferisttemperatur
                 name: Puffer Ist
               - entity: sensor.wpms3_puffersolltemperatur

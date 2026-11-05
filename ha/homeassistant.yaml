@@ -146,18 +146,64 @@ mqtt:
       unit_of_measurement: "A"
       icon: "mdi:flash"
 
-    - name: "WPMS3 Spreizung"
-      state_topic: "wpms3/info"
-      value_template: "{{ (value_json.vorlaufisttemperatur - value_json.ruecklaufisttemperatur) | round(1) }}"
-      unit_of_measurement: "K"
-      icon: "mdi:thermometer-lines"
-
     - name: "WPMS3 Heissgastemperatur"
       state_topic: "wpms3/info"
       value_template: "{{ value_json.heissgas_temp }}"
       unit_of_measurement: "°C"
       device_class: temperature
       state_class: measurement
+
+    # --- WP-interne Prozessdaten (node 500, display-verified) ---
+    - name: "WPMS3 WP Ruecklauf"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.wp_ruecklauf_wpl }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Verdampfertemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.verdampfer_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Fortlufttemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.fortluft_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Sauggastemperatur"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.sauggas_temp }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+
+    - name: "WPMS3 Druck Mitteldruck"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.druck_mitteldruck }}"
+      unit_of_measurement: "bar"
+      icon: "mdi:gauge"
+
+    # --- Abgeleitete Werte ---
+    - name: "WPMS3 WP Spreizung"
+      state_topic: "wpms3/info"
+      value_template: "{{ (value_json.vorlaufisttemperatur - value_json.wp_ruecklauf_wpl) | round(1) }}"
+      unit_of_measurement: "K"
+      icon: "mdi:thermometer-lines"
+
+    - name: "WPMS3 COP Live"
+      state_topic: "wpms3/info"
+      value_template: >-
+        {% if value_json.verdichter_laeuft and (value_json.wp_wasservolumenstrom | float) > 0 and (value_json.strom_inverter | float) > 0 %}
+          {{ ((value_json.wp_wasservolumenstrom / 60 * 4.18 * (value_json.vorlaufisttemperatur - value_json.wp_ruecklauf_wpl)) / (value_json.spannung_inverter * value_json.strom_inverter / 1000)) | round(1) }}
+        {% else %}
+          unavailable
+        {% endif %}
+      icon: "mdi:gauge"
 
     - name: "WPMS3 Starts Abtauung"
       state_topic: "wpms3/info"

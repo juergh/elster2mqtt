@@ -290,12 +290,16 @@ Compressor start sequence captured end-to-end (natural DHW start):
 3. Compressor ignites at 38 Hz and ramps in ~4 Hz steps every ~2 s to
    71 Hz (`063B`).
 4. Once at full speed, `500.07A8` changes `0x0008 → 0x0218`.
-5. Rough output estimate with the confirmed registers (validations
-   still open, see section 11):
-   - `Q_th = flow[l/min]/60 * 4.18 * (T_vorlauf - T_ruecklauf)`
-   - `P_el ≈ sqrt(3) * U * I` (three-phase inverter output) or
-     `U * I` (single-phase) — factor still to be validated against a
-     meter; the three-phase reading gives physically plausible results.
+5. Output estimate from the confirmed registers:
+   - `Q_th = flow[l/min]/60 * 4.18 * (T_vorlauf - T_ruecklauf)`, using
+     the matched WPL-internal pair `01D6`/`0016`
+   - `P_el = U × I` — the WPL 15 AS compressor is fed **single-phase**
+     (L1+N; the schematic ST-AM 11212/4, Blatt 11 wires only L1 to the
+     heat pump's power terminals X4, fused 13 A; L2/L3 feed the DHC
+     booster). So `06B1 × 06B2` is the full compressor electrical
+     intake — no √3 or 3× factor. At 38 Hz min load this yields
+     ~0.73 kW against ~4.4 kW thermal, i.e. COP ≈ 6, consistent with
+     the daily counter COP.
 
 (The registers previously listed here as unlabeled candidates —
 `063F`/`06D9`, `05D7`, `0832`, `06EB`/`06EC`, `0A36`, `0A38` — are all
@@ -378,8 +382,6 @@ configuration. Listed so nobody re-probes them blindly:
   observation at partial load (values differ).
 - `500.07A8` semantics: `0x0008` idle, `0x0218` running, one unexplained
   20-minute `0x0408` window.
-- Whether `06B1 × 06B2` needs the √3 three-phase factor for a correct
-  electrical power reading (validate against a utility meter).
 - `500.0061` (`ABTAUUNGAKTIV`) reported `512` both during a DHW cycle
   and during a heating run — likely a generic compressor-activity bit
   rather than a defrost flag; needs a capture during an actual defrost.
@@ -419,3 +421,9 @@ Corrections established by the experiments above:
 - The display polls the WÄRMEPUMPE screen on node `0x514`, using the
   `A1 14 …` addressing form (byte 1 carries the low node bits; section
   1.1).
+- Electrical power is `U × I` with no three-phase factor: although the
+  installation is supplied `3x400/230V`, the schematic ST-AM 11212/4
+  (Blatt 11) wires only L1+N to the heat pump's power terminals
+  (*einpolig*, 13 A fuse); L2/L3 feed the DHC booster elements. The
+  √3 reading is wrong on this unit despite its seemingly plausible
+  result.
