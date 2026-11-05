@@ -168,6 +168,21 @@ data:
   - name: STROM_INVERTER
     index: 500.06b2
     format: dec_val
+  - name: VERDAMPFER_TEMP
+    index: 500.07a9
+    format: dec_val
+  - name: SAUGGAS_TEMP
+    index: 500.063f
+    format: dec_val
+  - name: DRUCK_MITTELDRUCK
+    index: 500.0832
+    format: cent_val
+  - name: FORTLUFT_TEMP
+    index: 500.0a38
+    format: dec_val
+  - name: WP_RUECKLAUF_WPL
+    index: 500.0016
+    format: dec_val
 
   # Energy & Intake (for COP / JAZ calculation)
   - name: WAERMEERTRAG_HEIZ_TAG_WH

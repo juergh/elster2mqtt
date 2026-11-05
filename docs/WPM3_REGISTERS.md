@@ -86,7 +86,7 @@ configuration, not necessarily on other models.
 | `0x180` | WPM system node: heating circuits, buffer, DHW, system status `01d2` |
 | `0x480` | WPM manager: bus master; cyclic 10 s polling (`0199`, `02CA`, `0917`, `07A8`, `0A36`, `01D6`, `0016`); writes relay command bitmaps |
 | `0x500` | WPL 15 AS heat pump controller: refrigerant circuit, inverter, energy counters |
-| `0x514` | Auxiliary inverter/IWS controller; mirrors most `500` process-data registers; writes `500.4E7A` |
+| `0x514` | Auxiliary inverter/IWS controller; mirrors most `500` process-data registers; writes `500.4E7A`; polled by the display for the INFO → WÄRMEPUMPE screen |
 | `0x601` | Heating circuit 1 (direct/buffer circuit): `010e` heating curve |
 | `0x602` | Heating circuit 2 (mixer circuit): `010e` heating curve, `000f`/`0004` flow Ist/Soll |
 | `0x680` | Free sender ID used by diagnostic tools (`elster2mqtt`, `cansend`) |
@@ -250,23 +250,36 @@ total 3.92 (device-internal estimates).
 
 ## 6. Live Process Data (INFO → WÄRMEPUMPE → PROZESSDATEN)
 
-Verified by navigating the display screen while capturing; the display
-polls each shown item in screen order.
+The display polls the whole screen **on node `0x514`** (which mirrors
+node `500`'s process-data registers; the config therefore reads the
+`500` originals). The poll sequence runs in screen order and repeats
+in rolling windows of the visible items. The mapping below is
+display-verified with labelled on-screen values during a
+compressor-running capture (38 Hz min load); values from that capture
+are given in brackets.
 
-| Display item | Register | Format | Observed live values | Confidence |
+| # | Display item | Register | Format | Observed |
 |---|---|---|---|---|
-| VERDAMPFERTEMPERATUR | `500.07A9` | dec_val °C | 2.8 → 1.5 °C while running | verified |
-| HEISSGASTEMPERATUR | `500.0265` | dec_val °C | 54.1 → 59.4 °C running; ~26 °C idle | verified |
-| ÖLSUMPFTEMPERATUR | `500.0A37` | dec_val °C | 30.7–31.6 °C | observed |
-| VERFLÜSSIGERTEMPERATUR | `500.0A39` | dec_val °C | 34.9 → 29.8 °C | observed |
-| DRUCK NIEDERDRUCK | `500.07A7` | cent_val bar | 8.20 → 7.33 bar running; 10.52 idle | verified |
-| DRUCK HOCHDRUCK | `500.07A6` | cent_val bar | 21.56 → 22.54 bar running; 20.87 idle | verified |
-| WP WASSERVOLUMENSTROM | `500.02E2` | dec_val l/min | 28.2–28.8 l/min while running | verified |
-| STROM INVERTER | `500.06B2` | dec_val A | 5.2–5.6 A running | verified |
-| SPANNUNG INVERTER | `500.06B1` | dec_val V | 237.6–238.2 V running | verified |
-| ISTDREHZAHL VERDICHTER | `500.063B` | integer Hz | ramps 38 → 71 Hz on start, steady 71 | verified |
-| SOLLDREHZAHL VERDICHTER | `500.063D` | integer Hz | 71 Hz steady; 0 during early ramp | observed |
-| LUEFTERLEISTUNG REL | `500.0833` | integer % | 47–48 % while running | observed |
+| 1 | RÜCKLAUFTEMPERATUR | `500.0016` | dec_val °C | WPL-internal return, 33.8 → 34.4 °C; sits ~1 K below the buffer-loop return `180.0016` |
+| 2 | VORLAUFTEMPERATUR | `500.01D6` | dec_val °C | 36.1 → 36.6 °C |
+| 3 | FROSTSCHUTZTEMPERATUR | `500.0A36` | dec_val °C | 34.9 → 35.5 °C; tracks `180.0016` (buffer-loop return) value-for-value |
+| 4 | AUSSENTEMPERATUR | `500.0662` | dec_val °C | 8.5 °C — the WPL's own outdoor sensor (`180.000C`, the Bedienteil's sensor, read 8.1 °C at the same time) |
+| 5 | FORTLUFTTEMPERATUR | `500.0A38` | dec_val °C | 2.5 °C |
+| 6 | VERDAMPFERTEMPERATUR | `500.07A9` | dec_val °C | 7.4 °C (earlier capture: 2.8 → 1.5 °C) |
+| 7 | SAUGGASTEMPERATUR | `500.06D9` (= `500.063F`) | dec_val °C | 10.8 °C; ~3.4 K superheat over the evaporator ✓ |
+| 8 | ZWISCHENEINSPRITZUNGSTEMP | `500.05D7` | dec_val °C | 32.7 → 32.9 °C |
+| 9 | HEISSGASTEMPERATUR | `500.0265` | dec_val °C | 68.2 → 69.0 °C running; ~26 °C idle |
+| 10 | VERFLÜSSIGERTEMPERATUR | `500.0A37` | dec_val °C | 34.4 °C |
+| 11 | ÖLSUMPFTEMPERATUR | `500.0A39` | dec_val °C | 29.3 → 29.4 °C |
+| 12 | DRUCK NIEDERDRUCK | `500.07A7` | cent_val bar | 8.21 bar running; 10.52 idle |
+| 13 | DRUCK MITTELDRUCK | `500.0832` | cent_val bar | 12.17 bar |
+| 14 | DRUCK HOCHDRUCK | `500.07A6` | cent_val bar | 22.23 → 22.50 bar running; 20.87 idle |
+| 15 | WP WASSERVOLUMENSTROM | `500.02E2` | dec_val l/min | 28.9 → 29.1 l/min |
+| 16 | STROM INVERTER | `500.06B2` | dec_val A | 3.0 → 3.1 A |
+| 17 | SPANNUNG INVERTER | `500.06B1` | dec_val V | 236.3 → 236.6 V |
+| 18 | ISTDREHZAHL VERDICHTER | `500.063B` | integer Hz | 38 Hz steady at min load; ramps 38 → 71 Hz on start |
+| 19 | SOLLDREHZAHL VERDICHTER | `500.063D` | integer Hz | 38 Hz; `06EB`/`06EC` on node 514 mirror this pair |
+| 20 | LUEFTERLEISTUNG REL | `500.0833` | integer % | 47 % |
 
 Compressor start sequence captured end-to-end (natural DHW start):
 
@@ -284,16 +297,9 @@ Compressor start sequence captured end-to-end (natural DHW start):
      `U * I` (single-phase) — factor still to be validated against a
      meter; the three-phase reading gives physically plausible results.
 
-Live but unlabeled candidates (answered on the bus, semantics open):
-
-| Register | Observed behaviour |
-|---|---|
-| `500.063F` / `500.06D9` | identical values, 50 → 15 during compressor run (decreasing; candidate: fan or ND-stage speed) |
-| `500.05D7` | ~31.4–31.6 °C, nearly constant (temperature candidate) |
-| `500.0832` | 1189 → 1060 during run (modulating value, scaling unknown) |
-| `500.06EB` / `500.06EC` | 47 on node 514 (equals `0833` fan %; Ist/Soll speed pair on other models) |
-| `500.0A36` | temperature polled by 480 every 10 s; 27–42 range, drifts with operating state |
-| `500.0A38` | 46 → 17 during run |
+(The registers previously listed here as unlabeled candidates —
+`063F`/`06D9`, `05D7`, `0832`, `06EB`/`06EC`, `0A36`, `0A38` — are all
+identified by the display-verified table above.)
 
 ---
 
@@ -309,7 +315,7 @@ Live but unlabeled candidates (answered on the bus, semantics open):
 | `500.0806` | Defrost start counter | 3048 → 3049 | verified |
 | `500.0807` | Duration of last defrost [min] | 2 | verified |
 | `500.0808` | Defrost compressor runtime VD1 [s] | 181 | verified |
-| `500.0061` | Defrost active flag | 0; read 512 once during DHW (semantics unclear) | tentative |
+| `500.0061` | Defrost active flag | 0; read 512 during both a DHW cycle and a heating run (semantics unclear) | tentative |
 | `500.07FD`–`0801` | Further compressor runtime registers | 0 | observed |
 
 ---
@@ -374,9 +380,9 @@ configuration. Listed so nobody re-probes them blindly:
   20-minute `0x0408` window.
 - Whether `06B1 × 06B2` needs the √3 three-phase factor for a correct
   electrical power reading (validate against a utility meter).
-- `500.0832`, `500.063F`, `500.05D7`, `500.0A38` semantics.
-- `500.0061` (`ABTAUUNGAKTIV`) reported `512` once during a DHW cycle —
-  defrost flag semantics need a capture during an actual defrost.
+- `500.0061` (`ABTAUUNGAKTIV`) reported `512` both during a DHW cycle
+  and during a heating run — likely a generic compressor-activity bit
+  rather than a defrost flag; needs a capture during an actual defrost.
 - Location of the live EVU-lock state on this bus (`0074`/`01D3`/`FDAC`
   are candidates, none observed active yet).
 
@@ -401,3 +407,15 @@ Corrections established by the experiments above:
 - `0917` is the heating control integral — it explains "standby despite
   demand" periods (start permission is granted by the integral, not by
   a simple Ist/Soll comparison).
+- The WÄRMEPUMPE process screen is fully mapped by display capture
+  (section 6): `0A37`/`0A39` are Verflüssiger/Ölsumpf respectively
+  (community tables swap them), `0832` is DRUCK MITTELDRUCK,
+  `06D9`/`063F` is SAUGGASTEMPERATUR, `06EB`/`06EC` on node 514 mirror
+  the `063B`/`063D` compressor-speed pair, `0A36` is
+  FROSTSCHUTZTEMPERATUR (tracks the buffer-loop return `180.0016`),
+  `0662` is the WPL's own outdoor sensor (distinct from the
+  Bedienteil's `180.000C`), and `500.0016` is the WPL-internal return
+  (≠ `180.0016`).
+- The display polls the WÄRMEPUMPE screen on node `0x514`, using the
+  `A1 14 …` addressing form (byte 1 carries the low node bits; section
+  1.1).
