@@ -147,8 +147,10 @@ views:
                 name: Warmwasser Ist
               - entity: sensor.wpms3_warmwasser_solltemperatur
                 name: Warmwasser Soll
-              - entity: sensor.wpms3_raumsolltemperatur
-                name: Raumsolltemperatur
+              - entity: sensor.wpms3_komforttemperatur_hk_1_puffer
+                name: Komforttemperatur HK 1 (Puffer)
+              - entity: sensor.wpms3_komforttemperatur_hk_2_radiatoren
+                name: Komforttemperatur HK 2 (Radiatoren)
 
           - type: entities
             title: Kältekreis

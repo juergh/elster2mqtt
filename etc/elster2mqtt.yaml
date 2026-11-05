@@ -63,8 +63,11 @@ data:
   - name: HEIZKURVE_HK_2
     index: 602.010e
     format: cent_val
-  - name: RAUMSOLLTEMP_I
-    index: 180.0005
+  - name: KOMFORT_TEMPERATUR_HK_1
+    index: 601.0005
+    format: dec_val
+  - name: KOMFORT_TEMPERATUR_HK_2
+    index: 602.0005
     format: dec_val
   - name: INTEGRAL_REGELABWEICHUNG
     index: 500.0917

@@ -92,9 +92,15 @@ mqtt:
       value_template: "{{ value_json.heizkurve_hk_2 }}"
       icon: "mdi:chart-bell-curve"
 
-    - name: "WPMS3 Raumsolltemperatur"
+    - name: "WPMS3 Komforttemperatur HK 1 (Puffer)"
       state_topic: "wpms3/info"
-      value_template: "{{ value_json.raumsolltemp_i }}"
+      value_template: "{{ value_json.komfort_temperatur_hk_1 }}"
+      unit_of_measurement: "°C"
+      device_class: temperature
+
+    - name: "WPMS3 Komforttemperatur HK 2 (Radiatoren)"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.komfort_temperatur_hk_2 }}"
       unit_of_measurement: "°C"
       device_class: temperature
 

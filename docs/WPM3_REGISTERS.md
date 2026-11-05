@@ -87,8 +87,8 @@ configuration, not necessarily on other models.
 | `0x480` | WPM manager: bus master; cyclic 10 s polling (`0199`, `02CA`, `0917`, `07A8`, `0A36`, `01D6`, `0016`); writes relay command bitmaps |
 | `0x500` | WPL 15 AS heat pump controller: refrigerant circuit, inverter, energy counters |
 | `0x514` | Auxiliary inverter/IWS controller; mirrors most `500` process-data registers; writes `500.4E7A`; polled by the display for the INFO → WÄRMEPUMPE screen |
-| `0x601` | Heating circuit 1 (direct/buffer circuit): `010e` heating curve |
-| `0x602` | Heating circuit 2 (mixer circuit): `010e` heating curve, `000f`/`0004` flow Ist/Soll |
+| `0x601` | Heating circuit 1 (direct/buffer circuit): `010e` heating curve, `0005` Komforttemperatur (curve offset), `0008` reduced/eco setpoint |
+| `0x602` | Heating circuit 2 (mixer circuit): `010e` heating curve, `0005` Komforttemperatur, `000f`/`0004` flow Ist/Soll |
 | `0x680` | Free sender ID used by diagnostic tools (`elster2mqtt`, `cansend`) |
 
 ---
@@ -421,6 +421,13 @@ Corrections established by the experiments above:
 - The display polls the WÄRMEPUMPE screen on node `0x514`, using the
   `A1 14 …` addressing form (byte 1 carries the low node bits; section
   1.1).
+- Per-circuit Komforttemperatur (heating-curve offset) is `0005` on the
+  circuit node, writable via the `C0` command: captured a live write
+  `C0 01 05 00 F2` (601, `0005` = 24.2) with readback 19.5 → 24.2;
+  the slope is `010E` on the same node. `180.0005` (community
+  `RAUMSOLLTEMP_I`) is the unverified inherited alias of `601.0005` —
+  they coincided once, but only `601.0005` is proven (write captured).
+  `0008` on each circuit node is the reduced/eco setpoint.
 - Electrical power is `U × I` with no three-phase factor: although the
   installation is supplied `3x400/230V`, the schematic ST-AM 11212/4
   (Blatt 11) wires only L1+N to the heat pump's power terminals

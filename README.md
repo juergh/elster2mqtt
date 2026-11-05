@@ -59,7 +59,7 @@ On Stiebel-Eltron systems, metrics are distributed across distinct nodes:
 
 | CAN Node | Typical Role | Typical Metrics |
 | :--- | :--- | :--- |
-| **`180`** | **WPM Master Controller** | Outdoor temp, buffer temp, DHW temp, room setpoint (`180.0005`), flow setpoints, pump status bitmask (`180.01d2`) |
+| **`180`** | **WPM Master Controller** | Outdoor temp, buffer temp, DHW temp, flow setpoints, pump status bitmask (`180.01d2`) |
 | **`500`** | **IWS (Outdoor Inverter Board)** | Compressor frequency (`500.063b`), hot gas temp (`500.0265`), defrost cycles (`500.0806`), compressor run hours, heat yield & electrical intake |
 | **`601`** | **Heating Circuit 1 (HK 1)** | Heating curve slope HK 1 (`601.010e`) |
 | **`602`** | **Heating Circuit 2 (HK 2)** | Heating curve slope HK 2 (`602.010e`) |
@@ -133,8 +133,11 @@ data:
   - name: HEIZKURVE_HK_2
     index: 602.010e
     format: cent_val
-  - name: RAUMSOLLTEMP_I
-    index: 180.0005
+  - name: KOMFORT_TEMPERATUR_HK_1
+    index: 601.0005
+    format: dec_val
+  - name: KOMFORT_TEMPERATUR_HK_2
+    index: 602.0005
     format: dec_val
   - name: INTEGRAL_REGELABWEICHUNG
     index: 500.0917
