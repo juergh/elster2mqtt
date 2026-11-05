@@ -453,6 +453,18 @@ template:
           {{ snapshot if fresh else (this.state if this.state | is_number) }}
         state_class: measurement
 
+  # ---
+  # Average compressor cycle length today (runtime / starts). Uses the
+  # history_stats sensors below; approximate due to the 5-minute polling
+  # interval, but trends reveal short-cycling.
+  - sensor:
+      - name: "WPMS3 Verdichter Mittlere Laufzeit"
+        unit_of_measurement: "min"
+        state: >
+          {% set s = states('sensor.wpms3_verdichter_starts_heute') | int(0) %}
+          {% set h = states('sensor.wpms3_verdichter_laufzeit_heute') | float(0) %}
+          {{ (h * 60 / s) | round(0) if s > 0 else 0 }}
+
 # ---
 # 7-day rolling averages over the daily COP snapshots computed above.
 # `entity_id:` (rather than `source:`) is the correct key for the legacy
@@ -472,3 +484,31 @@ sensor:
     state_characteristic: mean
     max_age:
       days: 7
+
+# ---
+# Compressor cycling metrics from the verdichter_laeuft flag.
+# Caveat: the bridge polls every 5 minutes, so cycles shorter than one
+# interval can be missed and the start count is approximate; trends are
+# meaningful, absolute values are not.
+  - platform: history_stats
+    name: "WPMS3 Verdichter Laufzeit Heute"
+    entity_id: binary_sensor.wpms3_verdichter_aktiv
+    state: "on"
+    type: time
+    start: "{{ today_at('00:00') }}"
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: "WPMS3 Verdichter Starts Heute"
+    entity_id: binary_sensor.wpms3_verdichter_aktiv
+    state: "on"
+    type: count
+    start: "{{ today_at('00:00') }}"
+    end: "{{ now() }}"
+
+  - platform: statistics
+    name: "WPMS3 COP Live Tagesmittel"
+    entity_id: sensor.wpms3_cop_live
+    state_characteristic: mean
+    max_age:
+      hours: 24

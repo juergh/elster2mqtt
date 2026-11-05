@@ -207,3 +207,50 @@ views:
                 name: Warmwasser
               - entity: sensor.bthome_sensor_78e5_temperature
                 name: Wohnzimmer
+
+  - title: Effizienz
+    icon: mdi:gauge
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: COP
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_cop_heizen_tageswert
+                name: COP Heizen Tageswert
+              - entity: sensor.wpms3_cop_heizen_7_tage_mittel
+                name: COP Heizen 7 Tage Mittel
+              - entity: sensor.wpms3_cop_live_tagesmittel
+                name: COP Live Tagesmittel (24h)
+
+          - type: entities
+            title: Verdichterzyklen (näherungsw., 5-Min-Abtastung)
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_verdichter_starts_heute
+                name: Starts Heute
+              - entity: sensor.wpms3_verdichter_laufzeit_heute
+                name: Laufzeit Heute
+              - entity: sensor.wpms3_verdichter_mittlere_laufzeit
+                name: Mittlere Zykluslänge
+
+      - type: vertical-stack
+        cards:
+          - type: history-graph
+            title: COP Live & Vorlauf (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.wpms3_cop_live
+                name: COP Live
+              - entity: sensor.wpms3_vorlaufisttemperatur
+                name: WP Vorlauf
+
+          - type: history-graph
+            title: WP Spreizung & Zykluslänge (24h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.wpms3_wp_spreizung
+                name: WP Spreizung
+              - entity: sensor.wpms3_verdichter_mittlere_laufzeit
+                name: Mittlere Zykluslänge

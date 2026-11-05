@@ -502,6 +502,15 @@ To install:
 3. Restart Home Assistant to initialize the `statistics` sensors.
 4. *(Optional)* To change the averaging window from 7 to 30 days, change `days: 7` to `days: 30` in the two statistics sensor blocks.
 
+### Efficiency Metrics (Cycling & Live COP)
+
+`ha/homeassistant.yaml` additionally provides:
+
+- `sensor.wpms3_cop_live` and its 24-hour rolling mean — live efficiency while the compressor runs (see formula E above).
+- Compressor cycling metrics (`sensor.wpms3_verdichter_starts_heute`, `…_laufzeit_heute`, `…_mittlere_laufzeit`) derived from the `verdichter_laeuft` flag via `history_stats`.
+
+**Caveat:** the bridge polls every 5 minutes, so cycles shorter than one interval can be missed and the start count is approximate. The metrics reveal short-cycling as a trend (aim for average cycle lengths well above 15 minutes), but are not exact counters. Merge and reload as described above; the dashboard's *Effizienz* view visualises them.
+
 ### Dashboard Setup
 
 A ready-to-use Lovelace dashboard configuration is provided in `ha/homeassistant-dashboard.yaml`. To import it:
