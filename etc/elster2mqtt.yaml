@@ -85,9 +85,9 @@ data:
   - name: STARTS_ABTAUUNG
     index: 500.0806
   - name: VERDICHTER_STARTS_LOW
-    index: 500.071d
+    index: 514.071d
   - name: VERDICHTER_STARTS_HIGH
-    index: 500.071c
+    index: 514.071c
   - name: LAUFZEIT_VERDICHTER_WW
     index: 500.0802
   - name: DRUCK_HOCHDRUCK
