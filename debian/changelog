@@ -1,3 +1,10 @@
+elster2mqtt (0.2.6) unstable; urgency=medium
+
+  * Read the compressor start counter from the 514 aux node
+  * Publish the start counter as an integer
+
+ -- Juerg Haefliger <juergh@proton.me>  Fri, 06 Nov 2026 09:25:07 +0100
+
 elster2mqtt (0.2.5) unstable; urgency=medium
 
   * Map the Wärmepumpe process screen, poll five new registers
