@@ -356,7 +356,10 @@ def synthesize_metrics(info):
         try:
             high = float(info[high_key])
             low = float(info.get(low_key) or 0)
-            info[target_key] = round((high * 1000.0 + low) / factor, decimals)
+            value = round((high * 1000.0 + low) / factor, decimals)
+            # A zero-decimal target is a count; publish it as an int so
+            # the dashboard doesn't show 12252.0.
+            info[target_key] = int(value) if decimals == 0 else value
         except (ValueError, TypeError):
             pass
 

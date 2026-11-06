@@ -260,7 +260,8 @@ def test_synthesize_metrics_verdichter_starts():
         "verdichter_starts_low": 252,
     }
     synthesize_metrics(info)
-    assert info["verdichter_starts"] == 12252.0
+    assert info["verdichter_starts"] == 12252
+    assert isinstance(info["verdichter_starts"], int)
 
 
 def test_elster_bus_timeout_config():
