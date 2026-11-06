@@ -1,3 +1,11 @@
+elster2mqtt (0.2.5) unstable; urgency=medium
+
+  * Map the Wärmepumpe process screen, poll five new registers
+  * Map the per-circuit Komforttemperatur offset registers
+  * Publish the exact compressor start counter and count cycles from it
+
+ -- Juerg Haefliger <juergh@proton.me>  Fri, 06 Nov 2026 07:20:13 +0100
+
 elster2mqtt (0.2.4) unstable; urgency=medium
 
   * Derive daily DHW energy from SUM register deltas
