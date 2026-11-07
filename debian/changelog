@@ -1,3 +1,9 @@
+elster2mqtt (0.2.7) unstable; urgency=medium
+
+  * Restore DHW daily registers (revert the dead-register workaround)
+
+ -- Juerg Haefliger <juergh@proton.me>  Sat, 07 Nov 2026 19:31:32 +0100
+
 elster2mqtt (0.2.6) unstable; urgency=medium
 
   * Read the compressor start counter from the 514 aux node
