@@ -102,11 +102,11 @@ views:
                 name: Aufnahmeleistung Heizen
               - entity: sensor.wpms3_cop_heizen_tag
                 name: COP Heizen
-              - entity: sensor.wpms3_waermeertrag_warmwasser_heute
+              - entity: sensor.wpms3_waermeertrag_warmwasser_tag
                 name: Wärmeertrag Warmwasser
-              - entity: sensor.wpms3_aufnahmeleistung_warmwasser_heute
+              - entity: sensor.wpms3_aufnahmeleistung_warmwasser_tag
                 name: Aufnahmeleistung Warmwasser
-              - entity: sensor.wpms3_cop_warmwasser_heute
+              - entity: sensor.wpms3_cop_warmwasser_tag
                 name: COP Warmwasser
 
           - type: history-graph

@@ -247,12 +247,28 @@ mqtt:
       value_template: "{{ value_json.cop_daily_heating | default('unavailable') }}"
       icon: "mdi:chart-line"
 
-    # Daily DHW energy is NOT available from the controller (the register
-    # pairs 500.092a/092b and 500.091a/091b are dead on firmware 390-08).
-    # Instead, the all-time DHW totals below are tracked as total_increasing
-    # counters and accumulated into daily values and a daily COP by the
-    # utility_meter and template blocks at the end of this file. The
-    # all-time heating counters live in the "All-Time Totals" section below.
+    - name: "WPMS3 Waermeertrag Warmwasser Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.waermeertrag_ww_tag_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    - name: "WPMS3 Aufnahmeleistung Warmwasser Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.el_aufnahmeleistung_ww_tag_kwh }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    - name: "WPMS3 COP Warmwasser Tag"
+      state_topic: "wpms3/info"
+      value_template: "{{ value_json.cop_daily_ww | default('unavailable') }}"
+      icon: "mdi:chart-line"
+
+    # --- Home Assistant Energy Dashboard Entities (All-Time Totals) ---
+    # The all-time DHW SUM totals below are day-start snapshots on firmware
+    # 390-08 (frozen all day, jumping once at local midnight by the finished
+    # day's amount), so they are only used for lifetime totals, not daily
+    # values — the TAG registers above carry the live daily DHW values.
 
     - name: "WPMS3 Total Waermeertrag Warmwasser"
       state_topic: "wpms3/info"
@@ -337,53 +353,21 @@ mqtt:
       device_class: running
 
 # ---
-# Daily DHW energy and COP (WPM 3 firmware 390-08 workaround)
+# Daily compressor starts (the controller has no daily start counter, so a
+# utility_meter counts the deltas of its all-time counter; not affected by
+# the 5-minute bridge polling interval).
 #
-# The controller's DHW daily registers (500.092a/092b, 500.091a/091b) are
-# dead: the Wh word only holds values during an active DHW charge cycle and
-# the kWh word is never populated. The all-time SUM registers are reliable,
-# so daily DHW energy is accumulated here from their deltas. total_increasing
-# on the source sensors already discards any counter reset (SUM decrement).
-#
-# Same merge instruction as above: add the utility_meter: and template: blocks
-# as TOP-LEVEL sections (not under mqtt:), then reload via
+# Merge instruction: add the utility_meter: and template: blocks below as
+# TOP-LEVEL sections (not under mqtt:), then reload via
 # Developer Tools -> YAML (or restart Home Assistant).
 
 utility_meter:
-  wpms3_waermeertrag_warmwasser_heute:
-    name: "WPMS3 Waermeertrag Warmwasser Heute"
-    source: sensor.wpms3_total_waermeertrag_warmwasser
-    cycle: daily
-
-  wpms3_aufnahmeleistung_warmwasser_heute:
-    name: "WPMS3 Aufnahmeleistung Warmwasser Heute"
-    source: sensor.wpms3_total_aufnahmeleistung_warmwasser
-    cycle: daily
-
-  # Exact daily compressor starts from the heat pump's internal start
-  # counter (500.071c/071d, x1000 split) — not affected by the 5-minute
-  # bridge polling interval.
   wpms3_verdichter_starts_heute:
     name: "WPMS3 Verdichter Starts Heute"
     source: sensor.wpms3_verdichter_starts
     cycle: daily
 
 template:
-  # Daily DHW COP from the utility-meter deltas. Invalid until today's
-  # electrical consumption reaches 1 kWh (avoids 0/0 early in the morning).
-  # The availability check avoids has_value() so the block also works on
-  # pre-2024.3 Home Assistant.
-  - sensor:
-      - name: "WPMS3 COP Warmwasser Heute"
-        icon: "mdi:chart-line"
-        state: >
-          {% set w = states('sensor.wpms3_waermeertrag_warmwasser_heute') | float(0) %}
-          {% set e = states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') | float(0) %}
-          {{ (w / e) | round(2) if e >= 1.0 else 'unavailable' }}
-        availability: >-
-          {{ states('sensor.wpms3_waermeertrag_warmwasser_heute') not in ['unknown', 'unavailable']
-             and states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') not in ['unknown', 'unavailable'] }}
-
   # ---
   # Daily COP history for the "COP Tageswerte (7 Tage)" dashboard graph.
   # Snapshots of each day's final converged COP are stored in trigger-based
@@ -408,7 +392,7 @@ template:
 
   - trigger:
       - platform: state
-        entity_id: sensor.wpms3_cop_warmwasser_heute
+        entity_id: sensor.wpms3_cop_warmwasser_tag
     sensor:
       - name: "WPMS3 COP Warmwasser Merker"
         state: "{{ trigger.to_state.state if trigger.to_state.state | is_number else this.state if this.state | is_number }}"
@@ -420,6 +404,11 @@ template:
   # "0.0"). Note: the triggering entity is the MQTT sensor "WPMS3
   # Waermeertrag Heizen Tag" — its entity id is
   # sensor.wpms3_waermeertrag_heizen_tag, NOT the raw JSON key.
+  #
+  # IMPORTANT: a sensor with state_class: measurement must only ever hold
+  # numeric states, so the fallback renders NOTHING (state unchanged)
+  # instead of assigning the string 'unknown' — assigning it makes the
+  # sensor platform raise ValueError and take down the core.
   - trigger:
       - platform: state
         entity_id: sensor.wpms3_waermeertrag_heizen_tag
@@ -436,35 +425,22 @@ template:
           {% endif %}
         state_class: measurement
 
-  # DHW snapshot: taken on the Home Assistant utility_meter daily reset
-  # (the controller's DHW daily registers are dead on firmware 390-08),
-  # using the meters' last_period attributes. Timezone differences and
-  # clock drift are irrelevant. The trigger fires on every meter update
-  # (~every 5 min), but a new snapshot is only produced exactly at the
-  # daily reset, when the meter itself is back at 0 and last_period holds
-  # the previous day's converged values. While the meters bootstrap
-  # (last_period still 0 after a Home Assistant restart), the first
-  # snapshot falls back to the Merker holder — which at that instant holds
-  # the value the daily COP had right before the reset, i.e. yesterday's
-  # converged COP.
-  #
-  # IMPORTANT: a sensor with state_class: measurement must only ever hold
-  # numeric states, so the fallback renders NOTHING (state unchanged)
-  # instead of assigning the string 'unknown' — assigning it makes the
-  # sensor platform raise ValueError and take down the core.
+  # DHW snapshot: same pattern on the controller's live DHW daily counter
+  # (registers 500.092a/092b, reset by the controller at local midnight).
   - trigger:
       - platform: state
-        entity_id: sensor.wpms3_aufnahmeleistung_warmwasser_heute
+        entity_id: sensor.wpms3_waermeertrag_warmwasser_tag
     sensor:
       - name: "WPMS3 COP Warmwasser Tageswert"
         state: >
-          {% set fresh = states('sensor.wpms3_aufnahmeleistung_warmwasser_heute') | float(0) < 0.001 %}
-          {% set w = state_attr('sensor.wpms3_waermeertrag_warmwasser_heute', 'last_period') | float(0) %}
-          {% set e = state_attr('sensor.wpms3_aufnahmeleistung_warmwasser_heute', 'last_period') | float(0) %}
-          {% set m = states('sensor.wpms3_cop_warmwasser_merker') %}
-          {% set snapshot = (w / e) | round(2) if e >= 1.0 and w >= 1.0
-             else (m if m | is_number) %}
-          {{ snapshot if fresh else (this.state if this.state | is_number) }}
+          {% set prev = (trigger.from_state.state | float(-1)) if trigger.from_state else -1 %}
+          {% set now = trigger.to_state.state | float(-1) %}
+          {% if prev > 0 and now < 0.001 %}
+            {% set m = states('sensor.wpms3_cop_warmwasser_merker') %}
+            {{ m if m | is_number else (this.state if this.state | is_number) }}
+          {% else %}
+            {{ this.state if this.state | is_number }}
+          {% endif %}
         state_class: measurement
 
   # ---

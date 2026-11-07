@@ -194,33 +194,54 @@ Empirical proof: immediately after a DHW cycle started,
 `500.092A = 85`, `500.092B = 0` → 0.085 kWh charged so far; the display
 shows the same value with three decimals (e.g. `3.866 kWh`).
 
-**Firmware 390-08 caveat — the DHW daily pairs are NOT usable as daily
-counters.** Follow-up captures across a full day (morning 10:40–11:03
-and evening 20:41–22:xx, sampled again every 5 minutes in the service
-logs) show:
+**Firmware 390-08 caveat — the DHW daily pairs DO work, with two
+quirks.** An earlier assessment (based on Oct 21–22 captures) called
+them dead; multi-week 5-minute data (Oct 16 – Nov 7, including the
+Oct 25 DST transition) shows the opposite — the registers accumulate
+with Wh resolution during the day and reset at local midnight, exactly
+like the heating daily pair. The Oct 21–22 zeros were genuine
+no-DHW-consumption days. Verified timeline (local time):
 
-- `500.092B` and `500.091A`/`500.091B` answer `0` on every poll,
-  whenever polled, before, during and after DHW charges.
-- `500.092A` only carries a value during an *active* DHW charge
-  (0x0055 = 85 mid-cycle in the evening capture) and reads `0` between
-  cycles — it tracks the running cycle, not the day.
-- The heating daily pair works as documented above (`092E = 125` /
-  `092F = 41` → 41.125 kWh in the evening capture), so the dead
-  behaviour is specific to the DHW pairs.
-- The earlier "display shows the same value with three decimals" note
-  was wrong for this pairing: while `092A = 85`, the display showed
-  `3.866 kWh` — the display's daily DHW figure does not come from
-  these registers on this firmware.
+- Oct 20: `092A/092B` rose to 3.0 kWh by 03:00 (night-tariff charge),
+  reset to 0 at 00:00.
+- Oct 23: 0 → 3.037 (11:40) → 3.266 (21:00) → 10.496 (22:00) →
+  17.349 (23:00), reset at 00:00.
+- Oct 24: 0 → 6.865 (10:00) → 13.686 (11:00) → 17.044 (12:00),
+  reset at 00:00.
+- Oct 25 – Nov 7: 0.0 on every poll (DHW heating disabled).
 
-Daily DHW energy can only be derived from the SUM pair deltas; see
-`ha/homeassistant.yaml` (utility_meter over the total_increasing
-all-time counters).
+Quirk 1 — **zero-consumption days look like dead registers** (the pair
+reads `0` all day), which is what triggered the earlier misdiagnosis.
+
+Quirk 2 — **a charge running across midnight is cut off at the reset:**
+the day-end value only holds energy up to the last hour boundary before
+midnight. Verified Oct 23→24: the TAG pair ended the day at 17.349 kWh
+while the WW SUM pair added 21 kWh at the same midnight — ~3.6 kWh of
+the 22:00–00:00 charge are missing from the day total. The WW TAG pair
+also updates only about once per hour during charging (vs the heating
+TAG pair, which updates at every poll).
+
+**Firmware 390-08 caveat 2 — the WW SUM pairs are day-start snapshots.**
+The all-time DHW SUM registers do **not** increment during the day: each
+pair is frozen from the first post-midnight poll until the next local
+midnight, then jumps once by the finished day's amount (verified across
+the full 23-day window: `092C`/`092D` = 4/411 frozen Oct 16–20 → 4/414
+on Oct 21 → 4/422 on Oct 23 → 4/443 on Oct 24 → 4/460 on Oct 25;
+`091C`/`091D` likewise 1/44 → 1/45 → 1/47 → 1/51 → 1/55, all changes at
+00:00–00:05 local, unchanged across the Oct 25 DST transition). The
+heating SUM pairs behave differently — they increment during the day,
+so the frozen-snapshot behaviour is specific to the DHW SUM pairs.
+
+Consequence: daily DHW values must come from the TAG registers (live,
+Wh resolution), never from the WW SUM registers — a Home Assistant
+`utility_meter` over the frozen SUM totals loses the single midnight
+delta to its own daily reset and stays at 0 forever.
 
 | Display item (INFO → WÄRMEPUMPE) | Wh reg | kWh reg | MWh reg |
 |---|---|---|---|
 | WÄRMEMENGE VD HEIZEN TAG | `500.092E` | `500.092F` | — |
 | WÄRMEMENGE VD HEIZEN SUMME | — | `500.0930` | `500.0931` |
-| WÄRMEMENGE VD WW TAG | `500.092A` | `500.092B` | — | dead on 390-08 (see caveat above) |
+| WÄRMEMENGE VD WW TAG | `500.092A` | `500.092B` | — | works on 390-08, see caveats above |
 | WÄRMEMENGE VD WW SUMME | — | `500.092C` | `500.092D` |
 | WÄRMEMENGE NHZ HEIZEN TAG | `500.0926` | `500.0927` | — |
 | WÄRMEMENGE NHZ HEIZEN SUMME | — | `500.0928` | `500.0929` |
