@@ -255,6 +255,27 @@ def test_synthesize_metrics_without_wh_registers():
     assert "cop_daily_ww" not in info
 
 
+def test_synthesize_metrics_cop_requires_one_kwh():
+    info = {
+        "pumpenstatus": 561,
+        "waermeertrag_heiz_tag_kwh": 0,
+        "el_aufnahmeleistung_heiz_tag_kwh": 0.42,
+        "waermeertrag_ww_tag_kwh": 2,
+        "el_aufnahmeleistung_ww_tag_kwh": 0.99,
+    }
+    synthesize_metrics(info)
+    assert "cop_daily_heating" not in info
+    assert "cop_daily_ww" not in info
+
+    info["waermeertrag_heiz_tag_kwh"] = 4
+    info["el_aufnahmeleistung_heiz_tag_kwh"] = 1.0
+    info["waermeertrag_ww_tag_kwh"] = 4.5
+    info["el_aufnahmeleistung_ww_tag_kwh"] = 1.5
+    synthesize_metrics(info)
+    assert info["cop_daily_heating"] == 4.0
+    assert info["cop_daily_ww"] == 3.0
+
+
 def test_synthesize_metrics_verdichter_starts():
     info = {
         "pumpenstatus": 561,

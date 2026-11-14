@@ -384,10 +384,13 @@ def synthesize_metrics(info):
         if info["el_aufnahmeleistung_total_kwh"] > 0:
             info["jaz_total"] = round(info["waermeertrag_total_kwh"] / info["el_aufnahmeleistung_total_kwh"], 2)
 
+    # Suppress the daily COP until at least 1 kWh of electrical intake has
+    # accumulated: below that the ratio is dominated by counter noise (and
+    # would publish a meaningless 0.0 right after the midnight reset).
     try:
         el_tag_hzg = float(info.get("el_aufnahmeleistung_heiz_tag_kwh") or 0)
         heat_tag_hzg = float(info.get("waermeertrag_heiz_tag_kwh") or 0)
-        if el_tag_hzg > 0:
+        if el_tag_hzg >= 1.0:
             info["cop_daily_heating"] = round(heat_tag_hzg / el_tag_hzg, 2)
     except (ValueError, TypeError):
         pass
@@ -395,7 +398,7 @@ def synthesize_metrics(info):
     try:
         el_tag_ww = float(info.get("el_aufnahmeleistung_ww_tag_kwh") or 0)
         heat_tag_ww = float(info.get("waermeertrag_ww_tag_kwh") or 0)
-        if el_tag_ww > 0:
+        if el_tag_ww >= 1.0:
             info["cop_daily_ww"] = round(heat_tag_ww / el_tag_ww, 2)
     except (ValueError, TypeError):
         pass
