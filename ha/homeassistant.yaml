@@ -338,9 +338,13 @@ mqtt:
       device_class: heat
 
     # --- Betriebsphasen für den Temperaturverlauf im Dashboard ---
-    - name: "WPMS3 Heizkreispumpe"
+    # "Heizen" is keyed on the operating state (betriebszustand == 'heizen'),
+    # NOT on the Heizkreispumpe relay bit (01d2 bit 4): that relay is
+    # energized already during idle circulation on the combi-buffer schema
+    # (observed 0x0230), so it would read "Running" 24/7 and convey nothing.
+    - name: "WPMS3 Heizen (Radiatoren)"
       state_topic: "wpms3/info"
-      value_template: "{{ 'on' if 'heizkreispumpe' in value_json.aktive_komponenten else 'off' }}"
+      value_template: "{{ 'on' if value_json.betriebszustand == 'heizen' else 'off' }}"
       payload_on: "on"
       payload_off: "off"
       device_class: running
@@ -454,6 +458,17 @@ template:
           {% set s = states('sensor.wpms3_verdichter_starts_heute') | int(0) %}
           {% set h = states('sensor.wpms3_verdichter_laufzeit_heute') | float(0) %}
           {{ (h * 60 / s) | round(0) if s > 0 else 0 }}
+
+  # ---
+  # BGC booster guard: flags when the tank sits well above the WPM WW
+  # setpoint. The heat pump never exceeds the WW setpoint (+hysteresis),
+  # so a tank temperature a couple of K above it means the electric
+  # immersion heater (Einschraubheizkörper BGC) is running again —
+  # usually because its thermostat knob was turned back up.
+  - binary_sensor:
+      - name: "WPMS3 WW Booster Aktiv"
+        state: "{{ 'on' if states('sensor.wpms3_warmwasser_isttemperatur') | float(0) > (states('sensor.wpms3_warmwasser_solltemperatur') | float(0)) + 2 else 'off' }}"
+        device_class: heat
 
 # ---
 # 7-day rolling averages over the daily COP snapshots computed above.

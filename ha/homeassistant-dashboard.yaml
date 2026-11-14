@@ -193,10 +193,12 @@ views:
               # hydraulics do, what the living room gets out of it.
               - entity: binary_sensor.wpms3_verdichter_aktiv
                 name: Verdichter
-              - entity: binary_sensor.wpms3_heizkreispumpe
-                name: Heizkreis
+              - entity: binary_sensor.wpms3_heizen_radiatoren
+                name: Heizen (Radiatoren)
               - entity: binary_sensor.wpms3_warmwasserladung
                 name: WW Ladung
+              - entity: binary_sensor.wpms3_abtauung_aktiv
+                name: Abtauung
               - entity: sensor.wpms3_aussentemperatur
                 name: Aussen
               - entity: sensor.wpms3_radiator_vorlauf_ist_hk_2
