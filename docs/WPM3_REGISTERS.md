@@ -350,7 +350,7 @@ identified by the display-verified table above.)
 
 | Register | Meaning | Observed behaviour | Confidence |
 |---|---|---|---|
-| `500.0917` | `INTEGRAL_REGELABWEICHUNG_RELATIV` — heating control integral (community name; matches behaviour) | Holds `1000` while idle-with-demand; snaps to `0` at the instant the WPM commands a start; WPM polls it every 10 s | observed (strong) |
+| `500.0917` | `INTEGRAL_REGELABWEICHUNG_RELATIV` — heating control integral (community name; matches behaviour) | Signed 16-bit in 0.1 K·min; live captures oscillate through zero (roughly −100 … +60 K·min); earlier observation: holds `1000` while idle-with-demand and snaps to `0` at the instant the WPM commands a start; WPM polls it every 10 s | observed (strong) |
 | `500.07A8` | `VERDICHTER` — compressor state word | `0x0008` idle; `0x0218` while compressor at full speed; `0x0408` seen for exactly 20 min once (unresolved) | observed |
 | `500.0199` | `SOFTWARE_NUMMER` | constant `0x0093` (147) | verified |
 | `500.019A` | `SOFTWARE_VERSION` | constant `6` | verified |
@@ -361,6 +361,10 @@ identified by the display-verified table above.)
 | `180.0001` | `FEHLERMELDUNG` | constant `69`, not a live fault code | observed |
 | `180.0074` | `EVU_SPERRE_AKTIV` (community) | not yet observed live on this bus | tentative |
 | `180.01D3` | `EVU` | not yet observed | tentative |
+
+The control integral is signed: decode `500.0917` with two's complement and
+a scale of 0.1 (`dec_val`), so raw `65059` is `-47.7 K·min`, not `+65059`.
+The `1000` observation above corresponds to `100.0 K·min`.
 
 ---
 

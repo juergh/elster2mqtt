@@ -141,6 +141,7 @@ data:
     format: dec_val
   - name: INTEGRAL_REGELABWEICHUNG
     index: 500.0917
+    format: dec_val
 
   # Status & Inverter Diagnostics (WPL 15 AS)
   - name: ABTAUUNGAKTIV
