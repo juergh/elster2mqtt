@@ -1,0 +1,241 @@
+# Home Assistant alerts for elster2mqtt (WPM 3 / WPL 15 AS)
+#
+# Merge the script: and automation: blocks below as TOP-LEVEL sections
+# (not under mqtt:), then reload Scripts and Automations (or restart HA).
+#
+# Every alert goes to BOTH the mobile app and the persistent notification
+# feed via script.wpms3_alert. If the phone changes, update the notify
+# service name in the script.
+#
+# The provisional daily-COP floor is documented in docs/TUNING_TODO.md and
+# must be replaced by a seasonal COP-vs-outdoor fit at the end of winter.
+
+script:
+  wpms3_alert:
+    alias: "WPMS3 alert"
+    mode: queued
+    fields:
+      title:
+        description: "Notification title"
+      message:
+        description: "Notification body"
+    sequence:
+      - service: notify.mobile_app_motorola_edge_30_neo
+        continue_on_error: true
+        data:
+          title: "{{ title }}"
+          message: "{{ message }}"
+      - service: persistent_notification.create
+        data:
+          title: "{{ title }}"
+          message: "{{ message }}"
+
+automation:
+  # ---------------------------------------------------------------------
+  # Bridge / data availability
+  # ---------------------------------------------------------------------
+  - id: wpms3_bridge_stale
+    alias: "WPMS3 bridge stale"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.wpms3_bridge_stale
+        to: "on"
+        id: stale
+      - platform: homeassistant
+        event: start
+        id: start
+    condition:
+      - condition: state
+        entity_id: binary_sensor.wpms3_bridge_stale
+        state: "on"
+    action:
+      # Give the bridge one polling interval to publish after an HA restart
+      # before raising a stale alert.
+      - if:
+          - condition: trigger
+            id: start
+        then:
+          - delay: "00:05:00"
+      - condition: state
+        entity_id: binary_sensor.wpms3_bridge_stale
+        state: "on"
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 bridge stale"
+          message: >-
+            No MQTT update from the heat-pump bridge for more than 20 minutes.
+            Check the CAN interface, the elster2mqtt service, and the MQTT broker.
+
+  # ---------------------------------------------------------------------
+  # Electric booster / BGC
+  # ---------------------------------------------------------------------
+  - id: wpms3_booster_active
+    alias: "WPMS3 electric booster active"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.wpms3_zusatzheizung_aktiv
+        to: "on"
+        for: "00:02:00"
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 electric booster active"
+          message: >-
+            The 2nd heat generator (NHZ) has run for 2 minutes. COP is about
+            1.0; check the bivalence point and whether the heat pump is locked
+            out or unable to meet the load.
+
+  - id: wpms3_ww_booster_active
+    alias: "WPMS3 WW booster active"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.wpms3_ww_booster_aktiv
+        to: "on"
+        for: "00:30:00"
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 WW booster active"
+          message: >-
+            The DHW tank has been more than 2 K above the WPM setpoint for
+            30 minutes. The electric immersion heater (BGC) is probably
+            running; check its thermostat knob.
+
+  # ---------------------------------------------------------------------
+  # Cycling and defrost
+  # ---------------------------------------------------------------------
+  - id: wpms3_short_cycling
+    alias: "WPMS3 short cycling"
+    mode: single
+    trigger:
+      - platform: time
+        at: "20:00:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.wpms3_verdichter_mittlere_laufzeit
+        below: 15
+      - condition: numeric_state
+        entity_id: sensor.wpms3_verdichter_starts_heute
+        above: 10
+      - condition: numeric_state
+        entity_id: sensor.wpms3_verdichter_laufzeit_heute
+        above: 1
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 short cycling"
+          message: >-
+            Average compressor cycle is under 15 minutes with more than 10
+            starts today. Check the buffer hysteresis, heating curve, and
+            whether the heat pump is oversized for the current load.
+
+  - id: wpms3_defrost_spike
+    alias: "WPMS3 defrost spike"
+    mode: single
+    trigger:
+      - platform: time
+        at: "20:00:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.wpms3_starts_abtauung_heute
+        above: 8
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 defrost spike"
+          message: >-
+            More than 8 defrosts today. Check the outdoor unit airflow,
+            evaporator sensor, and refrigerant charge; a sustained spike is
+            not normal for this installation.
+
+  # ---------------------------------------------------------------------
+  # Hydraulics
+  # ---------------------------------------------------------------------
+  # The headroom sensor uses the buffer bottom/return (180.0078), which is a
+  # pessimistic lower bound: the buffer top may still be hot enough. Require
+  # the HP flow (the hot side upper bound) to be below the HK2 setpoint as
+  # well before alerting.
+  - id: wpms3_buffer_undersupply
+    alias: "WPMS3 buffer undersupply"
+    mode: single
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.wpms3_puffer_headroom_hk2
+        below: 0
+        for: "00:30:00"
+    condition:
+      - condition: state
+        entity_id: sensor.wpms3_betriebszustand
+        state: "heizen"
+      - condition: template
+        value_template: >
+          {% set hp = states('sensor.wpms3_vorlaufisttemperatur') %}
+          {% set sp = states('sensor.wpms3_radiator_vorlauf_soll_hk_2') %}
+          {{ hp not in ['unknown', 'unavailable']
+             and sp not in ['unknown', 'unavailable']
+             and (hp | float(0)) < (sp | float(0)) }}
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 buffer undersupply"
+          message: >-
+            Both the buffer bottom headroom and the HP flow have been below
+            the HK2 flow setpoint for 30 minutes while heating. The radiator
+            circuit is genuinely under-supplied, not just stratified; check
+            the HK1 curve/setpoint (never below HK2) and the buffer charging.
+
+  # ---------------------------------------------------------------------
+  # Provisional efficiency floor
+  # ---------------------------------------------------------------------
+  # This is intentionally crude. Replace it with a residual alert based on
+  # a full-season COP-vs-outdoor fit at the end of winter; see
+  # docs/TUNING_TODO.md. The current fit has too little cold-weather data
+  # to be used for alerts.
+  - id: wpms3_cop_floor
+    alias: "WPMS3 daily COP below floor"
+    mode: single
+    trigger:
+      - platform: time
+        at: "20:00:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.wpms3_cop_heizen_tag
+        below: 4.0
+      - condition: numeric_state
+        entity_id: sensor.wpms3_aussentemperatur_24h_mittel
+        above: 5.0
+      - condition: numeric_state
+        entity_id: sensor.wpms3_aufnahmeleistung_heizen_tag
+        above: 1.0
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3 daily COP below floor"
+          message: >-
+            Today's heating COP is below 4.0 with a 24 h mean outdoor
+            temperature above 5 C. This is a provisional floor; see
+            docs/TUNING_TODO.md. Check flow temperatures, the heating curve,
+            and refrigerant-side values.
+
+  # ---------------------------------------------------------------------
+  # One-shot reminder: end of the 2026/27 heating season
+  # ---------------------------------------------------------------------
+  # The seasonal COP-vs-outdoor fit needs cold-weather data; refitting it
+  # now would repeat the noisy 30-day fit. See docs/TUNING_TODO.md.
+  - id: wpms3_end_of_winter_refit
+    alias: "WPMS3 end-of-winter COP refit reminder"
+    mode: single
+    trigger:
+      - platform: time
+        at: "2027-04-01T09:00:00"
+    action:
+      - service: script.wpms3_alert
+        data:
+          title: "WPMS3: end-of-winter COP refit"
+          message: >-
+            The 2026/27 heating season is over. Refit the COP-vs-outdoor
+            model and replace the provisional daily COP floor with a residual
+            alert. See docs/TUNING_TODO.md in the elster2mqtt repository.
