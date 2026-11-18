@@ -2,6 +2,7 @@
 # Add or merge this block in your Home Assistant configuration.yaml under `mqtt:`.
 # The utility_meter:, template: and sensor: blocks at the end of this file
 # must be merged as TOP-LEVEL sections (NOT under mqtt:).
+# Alerts live in ha/homeassistant-alerts.yaml (script:/automation:).
 
 mqtt:
   sensor:
@@ -204,8 +205,12 @@ mqtt:
     - name: "WPMS3 COP Live"
       state_topic: "wpms3/info"
       value_template: >-
-        {% if value_json.verdichter_laeuft and (value_json.wp_wasservolumenstrom | float) > 0 and (value_json.strom_inverter | float) > 0 %}
-          {{ ((value_json.wp_wasservolumenstrom / 60 * 4.18 * (value_json.vorlaufisttemperatur - value_json.wp_ruecklauf_wpl)) / (value_json.spannung_inverter * value_json.strom_inverter / 1000)) | round(1) }}
+        {% set flow = value_json.wp_wasservolumenstrom | float(0) %}
+        {% set current = value_json.strom_inverter | float(0) %}
+        {% set voltage = value_json.spannung_inverter | float(0) %}
+        {% set spread = (value_json.vorlaufisttemperatur | float(0)) - (value_json.wp_ruecklauf_wpl | float(0)) %}
+        {% if value_json.verdichter_laeuft and flow > 5 and current > 0 and voltage > 0 and spread > 1 %}
+          {{ ((flow / 60 * 4.18 * spread) / (voltage * current / 1000)) | round(1) }}
         {% else %}
           unavailable
         {% endif %}
@@ -315,6 +320,14 @@ mqtt:
       value_template: "{{ value_json.jaz_warmwasser }}"
       icon: "mdi:gauge"
 
+    # --- Bridge heartbeat ---
+    # Changes on every wpms3/info message, so the staleness alert can detect
+    # a dead bridge even when the measured temperatures happen to be stable.
+    - name: "WPMS3 Last Update"
+      state_topic: "wpms3/info"
+      value_template: "{{ now().isoformat() }}"
+      icon: "mdi:clock-check"
+
   binary_sensor:
     - name: "WPMS3 Verdichter Aktiv"
       state_topic: "wpms3/info"
@@ -369,6 +382,11 @@ utility_meter:
   wpms3_verdichter_starts_heute:
     name: "WPMS3 Verdichter Starts Heute"
     source: sensor.wpms3_verdichter_starts
+    cycle: daily
+
+  wpms3_starts_abtauung_heute:
+    name: "WPMS3 Starts Abtauung Heute"
+    source: sensor.wpms3_starts_abtauung
     cycle: daily
 
 template:
@@ -470,6 +488,90 @@ template:
         state: "{{ 'on' if states('sensor.wpms3_warmwasser_isttemperatur') | float(0) > (states('sensor.wpms3_warmwasser_solltemperatur') | float(0)) + 2 else 'off' }}"
         device_class: heat
 
+  # ---
+  # Hydraulic diagnostics for the HK1 buffer / HK2 mixer split.
+  # HK1 has no rooms on this schema; its setpoint is a virtual room target
+  # that sets the buffer/primary flow. HK2 is the only emitter circuit.
+  #
+  # Sensor reality: the only buffer sensor wired is 180.0078
+  # (PUFFERTEMP_UNTEN1, buffer bottom/return). The top/middle pockets
+  # 180.0076/180.0077 return 0x8000. 2b is the bottom/return sensor; 2d is
+  # the DHW top (180.000E), not a buffer top. The HP flow (180.01D6) is
+  # therefore the upper bound for the hot side of the buffer.
+  - sensor:
+      # Lower bound: buffer bottom/return vs HK2 flow setpoint.
+      - name: "WPMS3 Puffer-Headroom HK2"
+        unit_of_measurement: "K"
+        state_class: measurement
+        icon: mdi:thermometer-lines
+        availability: >
+          {{ has_value('sensor.wpms3_pufferisttemperatur')
+             and has_value('sensor.wpms3_radiator_vorlauf_soll_hk_2') }}
+        state: >
+          {{ (states('sensor.wpms3_pufferisttemperatur') | float(0)
+              - states('sensor.wpms3_radiator_vorlauf_soll_hk_2') | float(0)) | round(1) }}
+
+      - name: "WPMS3 HK2-Regelabweichung"
+        unit_of_measurement: "K"
+        state_class: measurement
+        icon: mdi:thermometer-alert
+        availability: >
+          {{ has_value('sensor.wpms3_radiator_vorlauf_ist_hk_2')
+             and has_value('sensor.wpms3_radiator_vorlauf_soll_hk_2') }}
+        state: >
+          {{ (states('sensor.wpms3_radiator_vorlauf_ist_hk_2') | float(0)
+              - states('sensor.wpms3_radiator_vorlauf_soll_hk_2') | float(0)) | round(1) }}
+
+      # Lower bound: buffer bottom/return vs HK2 actual flow.
+      - name: "WPMS3 Puffer-Mischer-Spreizung"
+        unit_of_measurement: "K"
+        state_class: measurement
+        icon: mdi:delta
+        availability: >
+          {{ is_state('binary_sensor.wpms3_verdichter_aktiv', 'on')
+             and is_state('binary_sensor.wpms3_heizen_radiatoren', 'on')
+             and has_value('sensor.wpms3_pufferisttemperatur')
+             and has_value('sensor.wpms3_radiator_vorlauf_ist_hk_2') }}
+        state: >
+          {{ (states('sensor.wpms3_pufferisttemperatur') | float(0)
+              - states('sensor.wpms3_radiator_vorlauf_ist_hk_2') | float(0)) | round(1) }}
+
+      # Upper bound: HP flow vs HK2 actual flow. The true hot-buffer
+      # temperature lies between this and the bottom-based lower bound.
+      - name: "WPMS3 Puffer-Mischer-Spreizung HP-Flow"
+        unit_of_measurement: "K"
+        state_class: measurement
+        icon: mdi:delta
+        availability: >
+          {{ is_state('binary_sensor.wpms3_verdichter_aktiv', 'on')
+             and is_state('binary_sensor.wpms3_heizen_radiatoren', 'on')
+             and has_value('sensor.wpms3_vorlaufisttemperatur')
+             and has_value('sensor.wpms3_radiator_vorlauf_ist_hk_2') }}
+        state: >
+          {{ (states('sensor.wpms3_vorlaufisttemperatur') | float(0)
+              - states('sensor.wpms3_radiator_vorlauf_ist_hk_2') | float(0)) | round(1) }}
+
+  # ---
+  # Bridge staleness: the heartbeat sensor changes on every MQTT message,
+  # so this turns on after 20 minutes without an update. The automation in
+  # ha/homeassistant-alerts.yaml notifies on the transition to 'on'.
+  # Unknown/unavailable is deliberately treated as 'off' so a fresh HA
+  # start does not raise a false stale alert before the first message.
+  - trigger:
+      - platform: time_pattern
+        minutes: "/1"
+    binary_sensor:
+      - name: "WPMS3 Bridge Stale"
+        device_class: problem
+        state: >
+          {% set last = states('sensor.wpms3_last_update') %}
+          {% set parsed = last | as_datetime %}
+          {% if last in ['unknown', 'unavailable', 'none'] or parsed is none %}
+            off
+          {% else %}
+            {{ (now() - parsed).total_seconds() > 1200 }}
+          {% endif %}
+
 # ---
 # 7-day rolling averages over the daily COP snapshots computed above.
 # `entity_id:` (rather than `source:`) is the correct key for the legacy
@@ -506,6 +608,25 @@ sensor:
   - platform: statistics
     name: "WPMS3 COP Live Tagesmittel"
     entity_id: sensor.wpms3_cop_live
+    state_characteristic: mean
+    max_age:
+      hours: 24
+
+  # ---
+  # Hydraulic performance trends. The mixing-loss sensor is unavailable
+  # outside compressor-on heating, so the mean covers valid samples only.
+  # This is the bottom/return lower bound; compare with the HP-flow upper
+  # bound when judging the true buffer-to-radiator loss.
+  - platform: statistics
+    name: "WPMS3 Puffer-Mischer-Spreizung 7 Tage Mittel"
+    entity_id: sensor.wpms3_puffer_mischer_spreizung
+    state_characteristic: mean
+    max_age:
+      days: 7
+
+  - platform: statistics
+    name: "WPMS3 Aussentemperatur 24h Mittel"
+    entity_id: sensor.wpms3_aussentemperatur
     state_characteristic: mean
     max_age:
       hours: 24

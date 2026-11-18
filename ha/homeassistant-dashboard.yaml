@@ -184,6 +184,17 @@ views:
               - entity: sensor.wpms3_laufzeit_verdichter_warmwasser
                 name: Verdichterlaufzeit Warmwasser
 
+          - type: entities
+            title: Hydraulik
+            show_header_toggle: false
+            entities:
+              - entity: sensor.wpms3_puffer_headroom_hk2
+                name: Puffer-Headroom (unten)
+                icon: mdi:thermometer-lines
+              - entity: sensor.wpms3_hk2_regelabweichung
+                name: HK2-Regelabweichung
+                icon: mdi:thermometer-alert
+
           - type: history-graph
             title: Temperaturverlauf (24h)
             hours_to_show: 24
@@ -203,14 +214,31 @@ views:
                 name: Aussen
               - entity: sensor.wpms3_radiator_vorlauf_ist_hk_2
                 name: Radiator Vorlauf (HK 2)
+              - entity: sensor.wpms3_radiator_vorlauf_soll_hk_2
+                name: Radiator Soll (HK 2)
               - entity: sensor.wpms3_ruecklaufisttemperatur
                 name: Rücklauf
-              - entity: sensor.wpms3_pufferisttemperatur
-                name: Puffer
+              # The buffer bottom (180.0078) is identical to the return
+              # (180.0016); only one line is drawn.
+              - entity: sensor.wpms3_puffersolltemperatur
+                name: Puffer Soll
               - entity: sensor.wpms3_warmwasser_isttemperatur
                 name: Warmwasser
               - entity: sensor.bthome_sensor_78e5_temperature
                 name: Wohnzimmer
+
+          - type: history-graph
+            title: Hydraulik (7 Tage)
+            hours_to_show: 168
+            entities:
+              - entity: binary_sensor.wpms3_verdichter_aktiv
+                name: Verdichter
+              - entity: binary_sensor.wpms3_heizen_radiatoren
+                name: Heizen
+              - entity: sensor.wpms3_puffer_headroom_hk2
+                name: Puffer-Headroom (unten)
+              - entity: sensor.wpms3_hk2_regelabweichung
+                name: HK2-Regelabweichung
 
   - title: Effizienz
     icon: mdi:gauge
@@ -227,6 +255,18 @@ views:
                 name: COP Heizen 7 Tage Mittel
               - entity: sensor.wpms3_cop_live_tagesmittel
                 name: COP Live Tagesmittel (24h)
+              - entity: sensor.wpms3_aussentemperatur_24h_mittel
+                name: Aussentemperatur 24h Mittel
+                icon: mdi:thermometer
+              - entity: sensor.wpms3_puffer_mischer_spreizung
+                name: Puffer-Mischer-Spreizung (unten)
+                icon: mdi:delta
+              - entity: sensor.wpms3_puffer_mischer_spreizung_hp_flow
+                name: Puffer-Mischer-Spreizung (HP-Flow)
+                icon: mdi:delta
+              - entity: sensor.wpms3_puffer_mischer_spreizung_7_tage_mittel
+                name: Puffer-Mischer-Spreizung (unten) 7 Tage Mittel
+                icon: mdi:delta
 
           - type: entities
             title: Verdichterzyklen
@@ -252,8 +292,45 @@ views:
               - entity: sensor.wpms3_vorlaufisttemperatur
                 name: WP Vorlauf
 
+          - type: statistics-graph
+            title: COP & Aussentemperatur (30 Tage)
+            chart_type: line
+            period: day
+            days_to_show: 30
+            stat_types:
+              - mean
+            entities:
+              - entity: sensor.wpms3_cop_heizen_tageswert
+                name: COP Heizen Tag
+              - entity: sensor.wpms3_aussentemperatur
+                name: Aussentemperatur
+
           - type: history-graph
-            title: WP Spreizung & Zykluslänge (24h)
+            title: Vorlauf vs. Aussentemperatur (7 Tage)
+            hours_to_show: 168
+            entities:
+              - entity: sensor.wpms3_vorlaufisttemperatur
+                name: WP Vorlauf
+              - entity: sensor.wpms3_radiator_vorlauf_ist_hk_2
+                name: Radiator Vorlauf (HK 2)
+              - entity: sensor.wpms3_aussentemperatur
+                name: Aussentemperatur
+              - entity: sensor.bthome_sensor_78e5_temperature
+                name: Wohnzimmer
+
+          - type: history-graph
+            title: Puffer-Mischer-Spreizung (7 Tage)
+            hours_to_show: 168
+            entities:
+              - entity: binary_sensor.wpms3_verdichter_aktiv
+                name: Verdichter
+              - entity: sensor.wpms3_puffer_mischer_spreizung
+                name: Puffer-Mischer-Spreizung (unten)
+              - entity: sensor.wpms3_puffer_mischer_spreizung_hp_flow
+                name: Puffer-Mischer-Spreizung (HP-Flow)
+
+          - type: history-graph
+            title: WP Spreizung (Vorlauf/Rücklauf) & Zykluslänge (24h)
             hours_to_show: 24
             entities:
               - entity: sensor.wpms3_wp_spreizung
