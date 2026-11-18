@@ -326,6 +326,24 @@ Compressor start sequence captured end-to-end (natural DHW start):
 `063F`/`06D9`, `05D7`, `0832`, `06EB`/`06EC`, `0A36`, `0A38` — are all
 identified by the display-verified table above.)
 
+Note on the buffer/mixer loss: `180.0078` is `PUFFERTEMP_UNTEN1`, the
+**buffer bottom/return** sensor, not a generic hot-buffer temperature. It
+tracks `180.0016` (return) almost exactly because the return enters the
+buffer at the bottom. `180.01D6` is the heat-pump flow; the true hot-buffer
+temperature lies between the bottom and the HP flow, so the bottom-based
+loss (`180.0078 - 180.000F`) is a lower bound and the HP-flow-based loss
+(`180.01D6 - 180.000F`) is an upper bound.
+
+On this installation (AM 11212 / ST-AM 11212/4):
+
+- `2b` is the bottom/return sensor (`180.0078`).
+- `2d` is the DHW top on the WW outlet (`180.000E`, `warmwasser_isttemperatur`), not a buffer top.
+- The buffer top/middle pockets (`180.0076`/`180.0077`) return `0x8000`; they are not wired. The middle gauge is a local thermometer.
+- `180.0017`/`180.0019` are not used on this configuration.
+
+HK1 is the direct buffer/primary circuit on this schema; HK2 is the only
+emitter circuit.
+
 ---
 
 ## 7. Runtime & Defrost Counters
