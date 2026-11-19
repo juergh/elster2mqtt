@@ -1,3 +1,10 @@
+elster2mqtt (0.2.8) unstable; urgency=medium
+
+  * Decode the control integral as a signed value
+  * Enforce the 1 kWh guard for daily COP
+
+ -- Juerg Haefliger <juergh@proton.me>  Thu, 19 Nov 2026 11:25:46 +0100
+
 elster2mqtt (0.2.7) unstable; urgency=medium
 
   * Restore DHW daily registers (revert the dead-register workaround)
